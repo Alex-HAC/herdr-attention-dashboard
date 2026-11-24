@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "codex",
+  "name": "Codex",
+  "updatedAt": "2026-11-15T11:21:32.305497+00:00",
+  "ready": true,
+  "tierLabel": "Business Premium",
+  "usageStatusText": "",
+  "authHelpText": "",
+  "limits": [
+    {
+      "label": "Weekly (7-day)",
+      "percent": 0.18,
+      "resetsAt": "2026-11-20T21:28:35+00:00"
+    }
+  ],
+  "limitsStale": false,
+  "limitsFetchedAt": 1794741692305,
+  "todayPrompts": 4,
+  "totalPrompts": 6555
+}

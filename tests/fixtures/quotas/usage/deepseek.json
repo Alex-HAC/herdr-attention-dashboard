@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "deepseek",
+  "name": "DeepSeek",
+  "updatedAt": "2026-11-15T11:21:31.000000+00:00",
+  "ready": false,
+  "tierLabel": "",
+  "limits": [],
+  "todayPrompts": 3,
+  "totalPrompts": 10
+}

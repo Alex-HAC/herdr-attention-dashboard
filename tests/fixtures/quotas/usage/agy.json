@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "agy",
+  "name": "Antigravity",
+  "updatedAt": "2026-11-15T11:21:31.768061+00:00",
+  "ready": true,
+  "tierLabel": "Gemini Enterprise Plus",
+  "usageStatusText": "",
+  "authHelpText": "",
+  "limits": [],
+  "limitsStale": false,
+  "limitsFetchedAt": 0,
+  "localOverride": "agy-gemini-enterprise (no quota meters: Gemini Enterprise exposes none)",
+  "todayPrompts": 0,
+  "totalPrompts": 132
+}

@@ -1,0 +1,259 @@
+# Herdr attention dashboard - configuration
+#
+# Copy to ~/.config/herdr-attention/config.toml (the installer does this once).
+# Every value here is optional; missing keys fall back to the defaults shown.
+# Toggles you flip in the dashboard are saved separately (state database) and
+# win over this file. `herdr-attention settings reset` drops those overrides.
+#
+# No secrets in this file. Tokens and passwords live in the GNOME keyring
+# under the service name in [keyring].
+
+[herdr]
+# Empty = $HERDR_SOCKET_PATH or ~/.config/herdr/herdr.sock
+socket = ""
+
+[watch]
+# Workspace ids (w1, w7, ...) to watch. New workspaces stay off until you
+# enable them here or in the dashboard.
+enabled_workspaces = []
+# Watched, but never sent to the phone.
+muted_workspaces = []
+
+[inference]
+# Passive reports_to fallback using specific first-prompt brief / trace evidence.
+# Also requires traces.enabled. Never prompts agents or infers roles from names.
+enabled = true
+
+[events]
+# Which event types create alerts. All on by default.
+question = true
+approval = true
+failure = true
+completion = true
+stall = true
+
+[stall]
+# A working agent with no status change and no output change for this long
+# is flagged as a *possible* stall. It is a guess, never proof.
+minutes = 15
+# Per-workspace override, e.g. { w4 = 30 }
+per_workspace = {}
+# How often to look at a working agent's output to see if it changed.
+# 0 = never read output; stall then relies on status alone (less reliable).
+output_poll_seconds = 60
+
+[failure]
+# An agent that disappears (pane closed, process exited, agent released)
+# while in one of these states is reported as a failure.
+when_gone_while = ["working", "blocked"]
+
+[attention]
+# Optional: use the cheap summary account to classify only unclear items.
+# Off by default; the overview uses deterministic signals (Herdr status,
+# permission prompts, last-message questions, and who the agent reports to).
+ai_classify = false
+
+[classify]
+# Herdr reports "blocked" for both approval dialogs and questions. The rule
+# that matched (from `herdr agent explain`) tells them apart. Substrings of
+# rule ids:
+approval_rules = ["permission", "trust_directory", "startup_update"]
+question_rules = ["form", "elicitation", "workflow_prompt", "strong_blocker"]
+
+[presence]
+# Phone alerts only go out after this long without keyboard/mouse input on
+# the laptop. Input inactivity is a guess at presence, not proof.
+phone_delay_minutes = 5
+# auto   = use the delay above
+# always = send to the phone right away
+# never  = hold everything (the dashboard still records it)
+mode = "auto"
+# The desktop plugin reports idle after 30 s without input, active on any
+# input, and a heartbeat every minute. Only idle/active is sent, never keys.
+# If the desktop plugin has not checked in for this long, presence is
+# "unknown" (shell restarted, laptop asleep, ...).
+heartbeat_stale_seconds = 180
+# What "unknown" counts as for phone alerts: "away" or "present".
+unknown_means = "away"
+
+[notify]
+# none | ntfy
+backend = "none"
+# Phone-alert toggle when a backend is configured (the dashboard can switch this).
+enabled = true
+# Your ntfy server and topic, e.g. "https://ntfy.your-tailnet.ts.net" / "herdr"
+ntfy_url = ""
+ntfy_topic = ""
+# Link added to each notification (the phone dashboard).
+dashboard_url = ""
+# Never more than this many phone messages per 10 minutes; the rest are
+# folded into one summary.
+max_per_10min = 8
+# How many items a summary lists by name before "+N more".
+summary_max_items = 5
+# 0.9.8.9: at most rate_count phone alerts per rate_minutes (0 = no limit); the rest wait
+# and come together as one summary. Questions and approvals always go at once.
+rate_count = 3
+rate_minutes = 30
+# Loudness per kind is set in Settings > Phone alerts (notify_tiers.<kind>_level:
+# quiet = ntfy low, normal = default, urgent = high); [notify.priority] below is no longer
+# used for phone alerts.
+
+[notify.priority]
+approval = "high"
+question = "high"
+failure = "high"
+blocked = "high"
+completion = "default"
+stall = "default"
+
+[history]
+retention_days = 7
+
+[output]
+# Lines of recent output shown when you open an agent.
+lines = 40
+# Regexes replaced with [redacted] before output is shown. Best effort only.
+redact = [
+  '(?i)\b(api[_-]?key|token|secret|password|passwd|bearer)\b\s*[:=]\s*\S+',
+  'sk-[A-Za-z0-9_-]{16,}',
+  'gh[pousr]_[A-Za-z0-9]{20,}',
+  'xox[abpr]-[A-Za-z0-9-]{10,}',
+  'AKIA[0-9A-Z]{16}',
+]
+
+[api]
+# Local socket used by the desktop plugin and CLI.
+# Empty = $XDG_RUNTIME_DIR/herdr-attention/api.sock (only you can open it)
+socket = ""
+
+[phone]
+# The phone dashboard is off until you turn it on. When on, it listens on
+# bind:port. Keep it on 127.0.0.1 and put Tailscale Serve in front of it
+# (see docs/phone.md) rather than binding to a public address.
+enabled = false
+# Bind and port defaults come from herdr_attention/ui_contract.json.
+# Origins allowed to send changes (ack, settings), e.g.
+# ["https://laptop.your-tailnet.ts.net"]. Empty = same host only.
+allowed_origins = []
+# Send the session cookie only over HTTPS. Leave on when using Tailscale Serve.
+cookie_secure = true
+session_hours = 72
+
+[traces]
+# Passive metrics (context size, token usage, session age, verified spawn
+# links) read from agent session files, found by Herdr's session id. Only
+# agents in watched workspaces; only these trace files, never auth or config.
+# Nothing is sent to the agents and no model is called.
+enabled = true
+claude_dirs = ["~/.claude-personal/projects", "~/.claude/projects"]
+codex_dirs = ["~/.codex/sessions"]
+poll_seconds = 30
+# Bytes read per trace per pass; big traces are caught up over several passes.
+max_bytes_per_pass = 16777216
+# Most conversation entries returned per "last N" request.
+conversation_max = 50
+
+[summaries]
+# On-demand AI summaries (the Summarize button). Automatic/background
+# summaries stay off unless you enable them in Settings or here.
+enabled = true
+auto = false
+account = "codex-personal"
+model = "gpt-6.2-sol"
+effort = "low"
+claude_config_dir = "~/.claude-personal"
+# Empty = find the real Claude Code binary (never the account wrapper).
+claude_bin = ""
+max_per_hour = 20
+# Wait this long after an attention change before summarising (coalesces bursts).
+coalesce_seconds = 20
+timeout_seconds = 120
+# Most characters of transcript/screen sent per summary.
+max_input_chars = 14000
+# Messages taken from the trace (and for "summarise longer").
+entries = 20
+longer_entries = 60
+# Check commit claims against `git log` in the agent's folder (read-only).
+check_git = true
+
+[notify_gate]
+# When a phone alert would be sent, a cheap check decides whether it is
+# worth sending and writes a short plain-English message. On by default.
+# If the check fails, the existing plain notification is sent instead.
+enabled = true
+account = "codex-personal"
+model = "gpt-6.2-sol"
+effort = "low"
+timeout_seconds = 20
+max_per_hour = 20
+coalesce_seconds = 8
+max_input_chars = 4000
+
+[notify_tiers]
+# What to notify, in the same groups as the overview attention card.
+# Presets: quiet (Waiting on you only), normal (the defaults below),
+# close_tabs (tiers 1–5), everything (including every status change).
+# Changing a single toggle in Settings becomes "custom".
+preset = "normal"
+# Quiet hours are on by default (0.9.8.9). Questions and approvals still come through.
+quiet_hours = true
+quiet_start = "23:00"
+quiet_end = "08:00"
+# Agent identities to "watch closely": notify all of their tiers.
+watch_closely = []
+waiting_on_you = true
+waiting_on_you_delivery = "ntfy"   # ntfy | desktop | dashboard
+waiting_on_you_gate = "always"     # always send; the AI may only rewrite
+might_look = true
+might_look_delivery = "ntfy"
+might_look_gate = "check"
+fyi_finished = true
+fyi_finished_delivery = "ntfy"
+fyi_finished_gate = "check"
+waiting_on_coordinator = false
+waiting_on_coordinator_delivery = "ntfy"
+waiting_on_coordinator_gate = "check"
+coordinator_milestone = false
+coordinator_milestone_delivery = "ntfy"
+coordinator_milestone_gate = "check"
+everything = false
+everything_delivery = "ntfy"
+everything_gate = "off"
+
+[explain]
+# On-demand AI explanation, only when you tap Explain. Not built yet.
+backend = "none"
+
+[keyring]
+# GNOME keyring service name for this tool's secrets.
+service = "herdr-attention-dashboard"
+
+[ui]
+# Proposed (not yet agreed): mark events as read so they leave the list.
+acknowledge = true
+# Proposed: needs-you first, then done, stalls, working, everything else.
+group_attention_first = true
+# An idle agent counts as "parked" once nothing has happened for this long,
+# otherwise as "waiting". A time rule on what the collector saw, not a Herdr fact.
+parked_after_minutes = 60
+
+[quotas]
+# Mirror of the Omarchy Agents panel. Leave the paths empty to read
+# ~/.local/state/omarchy/agents/usage/ (and order.json beside it). The
+# dashboard never refreshes tokens or switches accounts; it only reads.
+usage_dir = ""
+order_path = ""
+timezone = "Europe/Amsterdam"
+
+# Applies to AI summaries, rewritten notifications and Ask summary agent answers.
+# ste100 is an approximation; Plain English remains the default.
+[writing]
+style = "plain"  # plain | ste100
+
+[desktop]
+# Trusted laptop overview. Bind and port defaults live in ui_contract.json.
+# Keep the bind on IPv4 loopback. Never expose this listener with Tailscale Serve.
+enabled = true
+# bind = "127.0.0.1"
+# port can be overridden here; the wrapper and plugin use this same config.

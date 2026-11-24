@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "alexvdb.herdr-attention",
+  "name": "Herdr attention",
+  "version": "0.9.7",
+  "author": "Alex van den Berg",
+  "license": "MIT",
+  "description": "Which Herdr agents need you: questions, approvals, failures, finished work and possible stalls, from the local herdr-attention collector. Read-only. Also reports keyboard/mouse idle (never keystrokes) for phone alert gating.",
+  "kinds": [
+    "bar-widget",
+    "service"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml",
+    "service": "Service.qml"
+  },
+  "barWidget": {
+    "displayName": "Herdr attention",
+    "description": "Agents that need you first, then working, then the rest. Settings for watched workspaces, event types, stall time and phone alerts.",
+    "category": "AI",
+    "aliases": ["herdr", "agents-attention"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showOther": false,
+      "showSettings": false
+    },
+    "schema": [
+      {
+        "key": "showOther",
+        "type": "boolean",
+        "label": "Expand idle/other agents",
+        "defaultValue": false
+      },
+      {
+        "key": "showSettings",
+        "type": "boolean",
+        "label": "Expand settings",
+        "defaultValue": false
+      }
+    ]
+  }
+}

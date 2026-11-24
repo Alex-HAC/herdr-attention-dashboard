@@ -1,0 +1,894 @@
+{
+  "api": {
+    "agent": "/api/agent",
+    "chooser": "/api/chooser",
+    "conversation": "/api/conversation",
+    "explain": "/api/explain",
+    "health": "/api/health",
+    "history": "/api/history",
+    "hooks": "/api/hooks",
+    "inference_check": "/api/inference/check",
+    "launches": "/api/launches",
+    "launches_bind": "/api/launches/bind",
+    "layout": "/api/layout",
+    "notifications_read_all": "/api/notifications/read-all",
+    "notify_setup": "/api/notify/setup",
+    "notify_test": "/api/notify/test",
+    "output": "/api/output",
+    "terminal": "/api/terminal",
+    "presence": "/api/presence",
+    "relations": "/api/relations",
+    "routing_clear": "/api/routing/clear",
+    "routing_walls": "/api/routing/walls",
+    "session": "/api/session",
+    "settings": "/api/settings",
+    "settings_reset": "/api/settings/reset",
+    "stream": "/api/stream",
+    "summaries": "/api/summaries",
+    "summaries_audit": "/api/summaries/audit",
+    "view": "/api/view",
+    "focus": "/api/focus",
+    "tailnet_access": "/api/tailnet-access",
+    "desktop_navigation": "/api/desktop/navigation",
+    "notifications": "/api/notifications",
+    "replies": "/api/replies",
+    "asks_answer": "/api/asks/answer",
+    "event_ack": "/api/events/{id}/ack",
+    "notification": "/api/notifications/{id}",
+    "reply_cancel": "/api/replies/{id}/cancel",
+    "visuals": "/api/visuals",
+    "quotas_refresh": "/api/quotas/refresh",
+    "workspaces_refresh": "/api/workspaces/refresh",
+    "quota_stops_ack": "/api/quota-stops/ack",
+    "visual_file": "/api/visuals/{id}/file",
+    "visual_thumbnail": "/api/visuals/{id}/thumbnail",
+    "visual_download": "/api/visuals/{id}/download",
+    "visuals_seen": "/api/visuals/seen",
+    "question_image": "/api/question-images/{id}/file",
+    "question_thumbnail": "/api/question-images/{id}/thumbnail",
+    "cleanup": "/api/cleanup",
+    "cleanup_preview": "/api/cleanup/preview",
+    "cleanup_confirm": "/api/cleanup/confirm",
+    "account_icon": "/api/account-icons/{id}",
+    "file": "/api/file"
+  },
+  "hashes": {
+    "home": "#/",
+    "list": "#/list",
+    "workspace": "#/w/{id}",
+    "agent": "#/a/{id}",
+    "conversation": "#/a/{id}/conversation",
+    "output": "#/a/{id}/output",
+    "report": "#/a/{id}/report",
+    "terminal": "#/a/{id}/terminal",
+    "graph": "#/g/{id}",
+    "settings": "#/settings",
+    "quotas": "#/quotas",
+    "questions": "#/questions",
+    "visuals": "#/visuals",
+    "visual": "#/visuals/{id}",
+    "notifications": "#/n",
+    "notification": "#/n/{id}",
+    "legacy_graph": "#/graph/{id}"
+  },
+  "features": {
+    "desktop_focus": "desktop_focus"
+  },
+  "listeners": {
+    "phone": {
+      "enabled": false,
+      "bind": "127.0.0.1",
+      "port": 8765
+    },
+    "desktop": {
+      "enabled": true,
+      "bind": "127.0.0.1",
+      "port": 8766
+    }
+  },
+  "desktop": {
+    "title": "Herdr overview",
+    "class": "herdr-overview",
+    "hotkey": "SUPER + SHIFT + H",
+    "navigation": [
+      "notifications",
+      "notification",
+      "quotas",
+      "visuals",
+      "settings",
+      "terminal"
+    ]
+  },
+  "views": {
+    "home": "graph",
+    "list": "overview",
+    "workspace": "workspace",
+    "agent": "agent",
+    "conversation": "agent",
+    "output": "agent",
+    "report": "agent",
+    "terminal": "agent",
+    "graph": "graph",
+    "legacy_graph": "graph",
+    "settings": "settings",
+    "quotas": "quotas",
+    "questions": "questions",
+    "visuals": "visuals",
+    "visual": "visuals",
+    "notifications": "notifications",
+    "notification": "notifications"
+  },
+  "watch_closely": {
+    "report_debounce_seconds": 20,
+    "output_poll_seconds": 5,
+    "compact_question_limit": 3,
+    "labels": {
+      "updated": "Updated",
+      "out_of_date": "Out of date",
+      "refreshing": "Updating report…",
+      "refresh_failed": "Report refresh failed",
+      "hint": "Watching closely refreshes coordinator reports and sends more notifications. It does not change attention state."
+    }
+  },
+  "easy_reply": {
+    "labels": {
+      "reply": "Reply",
+      "send": "Send",
+      "other": "Other…",
+      "yes": "Yes",
+      "no": "No",
+      "edit": "Edit quick reply",
+      "to": "To:",
+      "queued": "Queued, agent busy",
+      "sent": "Sent to",
+      "steer": "Review direction"
+    },
+    "draft_storage_key": "herdr-reply-drafts-v1"
+  },
+  "question_preview": {
+    "labels": {
+      "open": "Open full size",
+      "unavailable": "Preview not available",
+      "file": "File:",
+      "choose": "Choose an option to answer the current dialog. Other replies wait until the dialog closes."
+    },
+    "reasons": {
+      "outside": "The file is outside your project folders.",
+      "private": "Private work files are never shown.",
+      "workspace": "Images from this workspace are never shown.",
+      "missing": "The file is not there.",
+      "type": "The file is not a PNG, JPEG, WebP or GIF image.",
+      "size": "The file is larger than {mb} MB.",
+      "failed": "The image did not load."
+    },
+    "short_path": 48
+  },
+  "arrange": {
+    "sections": [
+      {
+        "id": "needs_action",
+        "label": "Needs action",
+        "hideable": false
+      },
+      {
+        "id": "quotas",
+        "label": "Quotas",
+        "hideable": true
+      },
+      {
+        "id": "status_reports",
+        "label": "Status reports",
+        "hideable": true
+      },
+      {
+        "id": "latest_visuals",
+        "label": "Latest visuals",
+        "hideable": true
+      },
+      {
+        "id": "other_updates",
+        "label": "Other updates",
+        "hideable": true
+      }
+    ],
+    "labels": {
+      "open": "Arrange",
+      "title": "Arrange",
+      "intro": "Pinned items come first. Your order stays as you set it, also when an account is nearly full.",
+      "sections": "Information blocks",
+      "accounts": "Accounts and services",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "hide": "Hide",
+      "show": "Show",
+      "pinned": "Pinned",
+      "hidden": "Hidden",
+      "up": "Move up",
+      "down": "Move down",
+      "drag": "Drag to move",
+      "always_shown": "Always shown",
+      "no_accounts": "No accounts in the quota records yet.",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "done": "Done",
+      "hidden_blocks": "Hidden:",
+      "no_report": "No report yet",
+      "report_failed": "Report failed"
+    }
+  },
+  "panel": {
+    "labels": {
+      "quotas_open": "Open quotas",
+      "quotas_tip": "All account limits, resets and running agents",
+      "account_tip": "Opens the Quotas page",
+      "arrange": "Arrange ↗",
+      "arrange_tip": "Opens Notifications in the dashboard. Use Arrange there to change this order.",
+      "no_data": "–"
+    }
+  },
+  "quotas": {
+    "labels": {
+      "fine": "{n} accounts fine",
+      "fine_one": "1 account fine",
+      "hidden": "{n} hidden",
+      "checked": "checked {age}",
+      "checked_unknown": "check time unknown",
+      "just_now": "just now",
+      "old_data": "Old data",
+      "agents": "{n} agents",
+      "agents_one": "1 agent",
+      "agents_none": "No agents",
+      "flag_stopped": "{n} agents stopped",
+      "flag_stopped_one": "1 agent stopped",
+      "flag_scoped_full": "{scope} limit reached",
+      "scoped": "{scope}: {pct}% · resets {time}",
+      "scoped_no_reset": "{scope}: {pct}%",
+      "scoped_note": "{titles}: for one model only. When full it stops only the agents on that model, so it is not in the rings or the number.",
+      "settings_centre": "Number in the middle",
+      "settings_centre_note": "Which limit the big number shows, on the gauges, the header dials and the bar panel. The small label under it names it: wk weekly, 5h 5-hour.",
+      "flag_full": "Full",
+      "flag_nearly_full": "Nearly full",
+      "on_account": "Agents on this account",
+      "stopped": "Stopped by this limit",
+      "limits": "Limits",
+      "history": "Messages per day, last 7 days",
+      "no_limits": "No limit data",
+      "close": "Close",
+      "resets": "resets {time}",
+      "pin": "Pin in header",
+      "refresh": "Refresh quotas",
+      "refreshing": "Refreshing…",
+      "no_records": "No quota records yet.",
+      "open": "Open details",
+      "no_reset": "Reset time unknown",
+      "settings_open": "Arrange and settings",
+      "settings_title": "Quota view",
+      "settings_intro": "Saved on the dashboard: the phone, the laptop and the header chip use the same settings. A full account is flagged but never moves.",
+      "settings_done": "Done",
+      "settings_accounts": "Order, pin and hide",
+      "settings_for": "Gauge and warning settings for",
+      "settings_all": "All accounts",
+      "settings_show": "Show on the gauge",
+      "settings_rings_note": "Accounts without a weekly or 5-hour limit use their own limits for the two rings. Limits for one model only (Fable Weekly, Cursor's named models) show as a line under the gauge, not in the rings: they stop only agents on that model.",
+      "settings_levels": "Warning levels",
+      "settings_warning": "Warning from",
+      "settings_critical": "Nearly full from",
+      "settings_levels_note": "From the warning level the ring turns yellow and the account no longer folds as fine. From nearly full the gauge is flagged and counts for the header quota chip. Full stays at 100%.",
+      "settings_levels_order": "The warning level must be below nearly full.",
+      "settings_same": "Same as all accounts",
+      "settings_own": "Own settings",
+      "settings_size": "Gauge size",
+      "settings_group": "Group by provider",
+      "settings_group_note": "Pins and your order still apply inside each group.",
+      "settings_dials": "Mini dials in the header",
+      "settings_dials_note": "The first accounts in your order as small dials (outer weekly, inner 5-hour). A nearly full account takes the last place.",
+      "settings_dials_count": "How many",
+      "dials": "Quotas",
+      "dial_open": "{name}: {pct}% used. Open its details.",
+      "settings_account": "Settings for this account",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "unassigned": "{n} running agents have no recorded account, so no gauge counts them.",
+      "unassigned_one": "1 running agent has no recorded account, so no gauge counts it."
+    },
+    "parts": [
+      {
+        "id": "weekly",
+        "label": "Weekly ring (outer)"
+      },
+      {
+        "id": "session",
+        "label": "5-hour ring (inner)"
+      },
+      {
+        "id": "percent",
+        "label": "Percentage in the middle"
+      },
+      {
+        "id": "reset",
+        "label": "Reset time"
+      },
+      {
+        "id": "agents",
+        "label": "Agents count"
+      }
+    ],
+    "centres": [
+      {
+        "id": "higher",
+        "label": "Fuller"
+      },
+      {
+        "id": "weekly",
+        "label": "Weekly"
+      },
+      {
+        "id": "session",
+        "label": "5-hour"
+      },
+      {
+        "id": "both",
+        "label": "Both"
+      }
+    ],
+    "units": {
+      "Weekly": "wk",
+      "Session": "5h",
+      "Monthly": "mo"
+    },
+    "sizes": [
+      {
+        "id": "large",
+        "label": "Large"
+      },
+      {
+        "id": "compact",
+        "label": "Compact"
+      }
+    ],
+    "levels": {
+      "warning": 70,
+      "critical": 90
+    }
+  },
+  "ask_items": {
+    "choices": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "answer_format": "Answer to \"{text}\": {answer}",
+    "labels": {
+      "for_later": "For later",
+      "for_later_title": "The agent says this can wait",
+      "count_one": "1 question for you",
+      "count": "{n} questions for you",
+      "answered": "{done} of {n} answered",
+      "route": "{asker} asks. Your answer goes to {to}.",
+      "route_where": "{asker} asks. Your answer goes to {to} in {where}.",
+      "choices": "Choices",
+      "type": "Or type a short answer",
+      "type_only": "Type a short answer",
+      "send": "Send",
+      "send_choice": "Send: {choice}",
+      "sending": "Sending…",
+      "replied": "You replied “{text}” {when}",
+      "replied_to": "You replied “{text}” to {to} {when}",
+      "queued": "It waits until the agent is free.",
+      "failed": "Not delivered: {error}. Try again.",
+      "show_original": "Show original",
+      "quote": "The agent’s own words",
+      "original_from": "{name}’s message",
+      "maybe": "The agent may want something",
+      "maybe_hint": "No clear question was found. Read the message and reply if you want.",
+      "none": "Done, not reviewed",
+      "more": "More",
+      "less": "Less",
+      "at": "at {time}",
+      "yesterday": "yesterday at {time}",
+      "on": "on {date} at {time}"
+    },
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "weekdays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "text_max": 500,
+    "cut": {
+      "line": 160,
+      "card": 600,
+      "reply": 60
+    }
+  },
+  "account_icons": {
+    "labels": {
+      "title": "Account icons",
+      "intro": "How each subscription shows next to agents, on the Quotas page and in questions. Pick a mark, a colour and a short badge, or upload a small image.",
+      "open": "Account icons",
+      "open_from_quotas": "Change account icons",
+      "mark": "Mark",
+      "text_only": "Text only",
+      "color": "Colour",
+      "badge": "Badge",
+      "badge_hint": "1 or 2 characters; empty for none",
+      "image": "Own image",
+      "upload": "Upload image",
+      "replace": "Replace image",
+      "remove_image": "Remove image",
+      "image_hint": "PNG, JPEG or WebP. It is made small before it is sent.",
+      "uploading": "Uploading…",
+      "upload_failed": "Could not upload: {error}",
+      "too_big": "That image is still too big after making it small.",
+      "not_image": "That file is not a PNG, JPEG or WebP image.",
+      "reset": "Reset to default",
+      "changed": "Changed",
+      "default": "Default",
+      "edit": "Change",
+      "done": "Done",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "no_accounts": "No accounts in the quota records yet.",
+      "unknown": "Account not recorded",
+      "source_launch": "recorded at launch",
+      "source_config_folder": "from the session's config folder",
+      "source_environment": "from the agent's environment",
+      "source_both": "from the session's config folder and the agent's environment",
+      "source_parent": "from its parent agent"
+    },
+    "colors": [
+      {
+        "id": "blue",
+        "label": "Blue"
+      },
+      {
+        "id": "green",
+        "label": "Green"
+      },
+      {
+        "id": "yellow",
+        "label": "Yellow"
+      },
+      {
+        "id": "magenta",
+        "label": "Magenta"
+      },
+      {
+        "id": "cyan",
+        "label": "Cyan"
+      },
+      {
+        "id": "red",
+        "label": "Red"
+      },
+      {
+        "id": "neutral",
+        "label": "Grey"
+      }
+    ],
+    "glyphs": [
+      {
+        "id": "claude",
+        "label": "Claude",
+        "d": "m50.228 170.321 50.357-28.257.843-2.463-.843-1.361h-2.462l-8.426-.518-28.775-.778-24.952-1.037-24.175-1.296-6.092-1.297L0 125.796l.583-3.759 5.12-3.434 7.324.648 16.202 1.101 24.304 1.685 17.629 1.037 26.118 2.722h4.148l.583-1.685-1.426-1.037-1.101-1.037-25.147-17.045-27.22-18.017-14.258-10.37-7.713-5.25-3.888-4.925-1.685-10.758 7-7.713 9.397.649 2.398.648 9.527 7.323 20.35 15.75L94.817 91.9l3.889 3.24 1.555-1.102.195-.777-1.75-2.917-14.453-26.118-15.425-26.572-6.87-11.018-1.814-6.61c-.648-2.723-1.102-4.991-1.102-7.778l7.972-10.823L71.42 0 82.05 1.426l4.472 3.888 6.61 15.101 10.694 23.786 16.591 32.34 4.861 9.592 2.592 8.879.973 2.722h1.685v-1.556l1.36-18.211 2.528-22.36 2.463-28.776.843-8.1 4.018-9.722 7.971-5.25 6.222 2.981 5.12 7.324-.713 4.73-3.046 19.768-5.962 30.98-3.889 20.739h2.268l2.593-2.593 10.499-13.934 17.628-22.036 7.778-8.749 9.073-9.657 5.833-4.601h11.018l8.1 12.055-3.628 12.443-11.342 14.388-9.398 12.184-13.48 18.147-8.426 14.518.778 1.166 2.01-.194 30.46-6.481 16.462-2.982 19.637-3.37 8.88 4.148.971 4.213-3.5 8.62-20.998 5.184-24.628 4.926-36.682 8.685-.454.324.519.648 16.526 1.555 7.065.389h17.304l32.21 2.398 8.426 5.574 5.055 6.805-.843 5.184-12.962 6.611-17.498-4.148-40.83-9.721-14-3.5h-1.944v1.167l11.666 11.406 21.387 19.314 26.767 24.887 1.36 6.157-3.434 4.86-3.63-.518-23.526-17.693-9.073-7.972-20.545-17.304h-1.36v1.814l4.73 6.935 25.017 37.59 1.296 11.536-1.814 3.76-6.481 2.268-7.13-1.297-14.647-20.544-15.1-23.138-12.185-20.739-1.49.843-7.194 77.448-3.37 3.953-7.778 2.981-6.48-4.925-3.436-7.972 3.435-15.749 4.148-20.544 3.37-16.333 3.046-20.285 1.815-6.74-.13-.454-1.49.194-15.295 20.999-23.267 31.433-18.406 19.702-4.407 1.75-7.648-3.954.713-7.064 4.277-6.286 25.47-32.405 15.36-20.092 9.917-11.6-.065-1.686h-.583L44.07 198.125l-12.055 1.555-5.185-4.86.648-7.972 2.463-2.593 20.35-13.999-.064.065Z",
+        "view_box": "0 0 256 257",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/claude.svg"
+      },
+      {
+        "id": "codex",
+        "label": "Codex",
+        "d": "M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117.117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.703 2.33 1.77 2.918 3.198.278.679.418 1.388.421 2.126a5.655 5.655 0 01-.18 1.631.167.167 0 00.04.155 5.982 5.982 0 011.578 2.891c.385 1.901-.01 3.615-1.183 5.14l-.182.22a6.063 6.063 0 01-2.934 1.851.162.162 0 00-.108.102c-.255.736-.511 1.364-.987 1.992-1.199 1.582-2.962 2.462-4.948 2.451-1.583-.008-2.986-.587-4.21-1.736a.145.145 0 00-.14-.032c-.518.167-1.04.191-1.604.185a5.924 5.924 0 01-2.595-.622 6.058 6.058 0 01-2.146-1.781c-.203-.269-.404-.522-.551-.821a7.74 7.74 0 01-.495-1.283 6.11 6.11 0 01-.017-3.064.166.166 0 00.008-.074.115.115 0 00-.037-.064 5.958 5.958 0 01-1.38-2.202 5.196 5.196 0 01-.333-1.589 6.915 6.915 0 01.188-2.132c.45-1.484 1.309-2.648 2.577-3.493.282-.188.55-.334.802-.438.286-.12.573-.22.861-.304a.129.129 0 00.087-.087A6.016 6.016 0 015.635 2.31C6.315 1.464 7.132.846 8.086.457zm-.804 7.85a.848.848 0 00-1.473.842l1.694 2.965-1.688 2.848a.849.849 0 001.46.864l1.94-3.272a.849.849 0 00.007-.854l-1.94-3.393zm5.446 6.24a.849.849 0 000 1.695h4.848a.849.849 0 000-1.696h-4.848z",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/codex.svg"
+      },
+      {
+        "id": "cursor",
+        "label": "Cursor",
+        "d": "M32 6 54 19v26L32 58 10 45V19z M32 32 10 19M32 32l22-13M32 32v26",
+        "view_box": "0 0 64 64",
+        "paint": "stroke",
+        "stroke_width": 4.0,
+        "source": "omarchy.agents/assets/cursor.svg"
+      },
+      {
+        "id": "agy",
+        "label": "Antigravity",
+        "d": "M79.917,75.250 C84.583,78.750 91.583,76.417 85.167,70.000 C65.917,51.333 70.000,0.000 46.083,0.000 C22.167,0.000 26.250,51.333 7.000,70.000 C0.000,77.000 7.583,78.750 12.250,75.250 C30.333,63.000 29.167,41.417 46.083,41.417 C63.000,41.417 61.833,63.000 79.917,75.250 Z",
+        "view_box": "0 0 91.583 78.750",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/agy.svg"
+      },
+      {
+        "id": "grok",
+        "label": "Grok",
+        "d": "M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/grok.svg"
+      },
+      {
+        "id": "grokbot",
+        "label": "Grok Bot",
+        "d": "M228.541 114.228C228.541 130.133 225.184 145.994 218.738 160.534C212.674 174.217 203.904 186.669 193.065 196.988C155.933 232.34 99.497 238.596 55.5255 212.24C45.097 205.99 35.6851 198.072 27.7451 188.866C19.1926 178.953 12.3686 167.569 7.65781 155.351C2.60712 142.264 0 128.257 0 114.228C0 98.3219 3.35751 82.4611 9.80315 67.9215C15.8672 54.2382 24.6377 41.7862 35.4767 31.4668C72.6081 -3.88483 129.044 -10.1413 173.016 16.2153C183.444 22.4653 192.856 30.3829 200.796 39.5896C209.349 49.5018 216.173 60.8859 220.883 73.1037C225.934 86.1906 228.541 100.198 228.541 114.228Z M130.36 45.98L132.71 46.19L134.98 46.81L137.11 47.83L138.97 49.28L140.47 51.09L141.68 53.12L142.73 55.23L143.76 57.36L144.78 59.49L145.79 61.62L146.79 63.76L147.76 65.91L148.71 68.07L149.63 70.25L150.52 72.43L151.37 74.63L151.99 76.91L152.10 79.26L151.64 81.57L150.59 83.68L149.04 85.45L147.10 86.78L144.90 87.62L142.56 87.93L140.22 87.71L137.98 86.99L135.93 85.82L134.17 84.24L132.78 82.34L131.69 80.25L130.77 78.08L129.87 75.89L128.94 73.72L128.00 71.56L127.03 69.40L126.05 67.26L125.05 65.12L124.03 62.99L122.93 60.90L121.87 58.79L121.03 56.59L120.72 54.26L121.10 51.93L122.15 49.83L123.75 48.10L125.76 46.89L128.01 46.19Z M176.61 37.08L178.72 37.59L180.70 38.48L182.52 39.65L184.20 41.03L185.71 42.59L187.03 44.31L188.20 46.14L189.26 48.03L190.27 49.96L191.26 51.89L192.23 53.84L193.16 55.80L194.05 57.78L194.92 59.77L195.74 61.78L196.53 63.80L197.27 65.84L197.97 67.90L198.47 70.01L198.63 72.18L198.40 74.33L197.58 76.33L195.95 77.72L193.83 78.08L191.71 77.65L189.76 76.69L188.03 75.38L186.53 73.82L185.28 72.05L184.25 70.13L183.40 68.14L182.63 66.11L181.87 64.07L181.07 62.05L180.25 60.04L179.39 58.05L178.49 56.07L177.57 54.10L176.61 52.15L175.62 50.22L174.59 48.31L173.53 46.41L172.54 44.48L171.86 42.42L171.76 40.26L172.62 38.30L174.45 37.19Z",
+        "view_box": "-15 -15 259 259",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/grokbot.svg"
+      },
+      {
+        "id": "copilot",
+        "label": "GitHub Copilot",
+        "d": "M3.5 7C4.1 6.4 4.9 6 5.7 6l9.7.1c.8 0 1.6.3 2.2.9l2.6 2.6c.6.6.9 1.4.9 2.2V16c0 .6-.4 1-1 1h-1c0-.1-.1-.2-.1-.3a2.7 2.7 0 1 0-5.3.3h-5.2a2.7 2.7 0 1 0-4.5 0c0 .1-.1.1-.2.1a1.8 1.8 0 0 1-1.8-1.8V11c0-.8.3-1.6.9-2.2.5-.5 1.1-.8 1.7-1zM5.7 8c-.2 0-.4.1-.5.2-.3.3-.4.7-.4 1v4.3c.9-.8 2.1-1.2 3.3-1.2s2.4.5 3.3 1.2V9.9l-5.7-.2h-.6zm9.3 1.1v2.3c.9-.8 2.1-1.3 3.3-1.3s2.4.5 3.3 1.2V10.6c0-.4-.1-.7-.4-1-.3-.3-.6-.4-.9-.5l-5.3-.1zm-8.5 6c-.8 0-1.5.4-1.9 1.2a2.4 2.4 0 1 0 3.8 0 2 2 0 0 0-.6-.7 2 2 0 0 0-1.3-.5zm7.8 0c-.8 0-1.5.4-1.9 1.2a2.4 2.4 0 1 0 3.8 0 2 2 0 0 0-.6-.7 2 2 0 0 0-1.3-.5z",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/copilot.svg"
+      },
+      {
+        "id": "opencode",
+        "label": "OpenCode",
+        "d": "M180 240H60V120H180V240Z M180 60H60V240H180V60ZM240 300H0V0H240V300Z",
+        "view_box": "0 0 240 300",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/opencode.svg"
+      },
+      {
+        "id": "kimi",
+        "label": "Kimi",
+        "d": "M272.597333 244.522667c3.925333 0 7.125333 3.925333 7.125334 8.832v284.074666c0 7.338667 6.954667 11.477333 11.605333 6.826667l300.245333-297.813333a6.272 6.272 0 0 1 4.48-1.92h149.973334c6.741333 0 9.685333 10.496 4.437333 15.701333l-278.656 276.48c-3.968 3.925333-3.413333 11.648 1.066667 14.634667l215.552 156.032c24.021333 16.213333 50.602667 26.752 77.824 31.018666 3.626667 0.512 6.357333 4.224 6.357333 8.704v117.546667c0 5.12-3.584 9.216-7.722667 8.789333a294.741333 294.741333 0 0 1-132.565333-49.28l-249.002667-183.210666a6.058667 6.058667 0 0 0-7.850666 0.853333l-93.098667 92.373333a9.813333 9.813333 0 0 0-2.645333 6.869334v124.8c0 4.864-3.2 8.832-7.125334 8.832H169.258667c-3.925333 0-7.125333-3.968-7.125334-8.832V253.354667c0-4.906667 3.2-8.789333 7.125334-8.832h103.338666z M885.76 106.666667a73.856 73.856 0 0 1 0 147.712h-65.152a8.704 8.704 0 0 1-8.704-8.704V180.48c0-40.746667 33.066667-73.856 73.813333-73.856z",
+        "view_box": "0 0 1024 1024",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/kimi.svg"
+      },
+      {
+        "id": "qwen",
+        "label": "Qwen",
+        "d": "m140.93 85-16.35-28.33-1.93-3.34 8.66-15a3.323 3.323 0 0 0 0-3.34l-9.62-16.67c-.3-.51-.72-.93-1.22-1.22s-1.07-.45-1.67-.45H82.23l-8.66-15a3.33 3.33 0 0 0-2.89-1.67H51.43c-.59 0-1.17.16-1.66.45-.5.29-.92.71-1.22 1.22L32.19 29.98l-1.92 3.33H12.96c-.59 0-1.17.16-1.66.45-.5.29-.93.71-1.22 1.22L.45 51.66a3.323 3.323 0 0 0 0 3.34l18.28 31.67-8.66 15a3.32 3.32 0 0 0 0 3.34l9.62 16.67c.3.51.72.93 1.22 1.22s1.07.45 1.67.45h36.56l8.66 15a3.35 3.35 0 0 0 2.89 1.67h19.25a3.34 3.34 0 0 0 2.89-1.67l18.28-31.67h17.32c.6 0 1.17-.16 1.67-.45s.92-.71 1.22-1.22l9.62-16.67a3.323 3.323 0 0 0 0-3.34ZM51.44 3.33 61.07 20l-9.63 16.66h76.98l-9.62 16.66H45.67l-11.54-20zM57.21 120H22.58l9.63-16.67h19.25l-38.5-66.67h19.25l9.62 16.67L68.78 100l-11.55 20Zm61.59-33.34-9.62-16.67-38.49 66.67-9.63-16.67 9.63-16.66 26.94-46.67h23.1l17.32 30z",
+        "view_box": "0 0 141.38 140",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/qwen.svg"
+      },
+      {
+        "id": "deepseek",
+        "label": "DeepSeek",
+        "d": "M6.6 8.8C5 7.2 3.4 6.4 2.2 6.4C3 8 4.6 10 6.4 11.2C4.8 13 3.2 15.6 2.6 16.6C3.8 18 5.8 16 7.6 13.6C9.4 14.6 11.8 15 13.6 14.6L14.6 16.8L13.2 17.2L12.6 14.8C15.8 15.4 18.4 15.2 19.8 14.2C22 13.2 22.6 11.4 21.8 9.8C21 8 18 6.6 14.8 7.2C12 6.6 8.6 7.6 6.6 8.8ZM17.6 9.9A1.05 1.05 0 1 0 17.6 12A1.05 1.05 0 1 0 17.6 9.9Z",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/deepseek.svg"
+      },
+      {
+        "id": "ollama",
+        "label": "Ollama",
+        "d": "M22 12c-2-7 2-10 5-10c2 0 3 2 5 2s3-2 5-2c3 0 7 3 5 10c6 3 10 9 10 15c0 12-9 20-20 20c-11 0-20-8-20-20c0-6 4-12 10-15zM26 32c0-3 2-5 6-5s6 2 6 5-2 6-6 6-6-3-6-6zM26 21a2 2 0 1 0 .01 0zM38 21a2 2 0 1 0 .01 0z",
+        "view_box": "0 0 64 64",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/ollama.svg"
+      },
+      {
+        "id": "zai",
+        "label": "Z.ai",
+        "d": "M12.105 2L9.927 4.953H.653L2.83 2h9.276zM23.254 19.048L21.078 22h-9.242l2.174-2.952h9.244zM24 2L9.264 22H0L14.736 2H24z",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "evenodd",
+        "source": "omarchy.agents/assets/zai.svg"
+      },
+      {
+        "id": "openrouter",
+        "label": "OpenRouter",
+        "d": "M303.9475,17.19926c42.79734,0,77.48933,34.69327,77.48933,77.48933s-34.69199,77.48933-77.48933,77.48933l76.86166,76.86244c9.76367,9.76313,2.84903,26.45667-10.95697,26.45667h-220.88335c-71.32686,0-129.14889-57.82202-129.14889-129.14889S77.64197,17.19926,148.96884,17.19926h154.97866ZM148.96884,68.85881c-42.79607,0-77.48933,34.69327-77.48933,77.48933s34.69327,77.48933,77.48933,77.48933,77.48933-34.69327,77.48933-77.48933-34.69327-77.48933-77.48933-77.48933Z",
+        "view_box": "0 0 401.4 293.7",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/openrouter.svg"
+      },
+      {
+        "id": "minimax",
+        "label": "MiniMax",
+        "d": "M16.278,2C17.434,2 18.371,2.927 18.371,4.07L18.371,16.571C18.388,16.967 18.719,17.282 19.115,17.28C19.511,17.282 19.841,16.966 19.858,16.571L19.858,9.099C19.864,7.973 20.792,7.05 21.918,7.05C21.922,7.05 21.936,7.05 21.94,7.05C23.066,7.05 23.995,7.974 24,9.1L24,15.661C23.998,16.017 23.704,16.308 23.348,16.306C23.347,16.306 23.345,16.306 23.344,16.306C22.989,16.306 22.697,16.016 22.695,15.661L22.695,9.1C22.693,8.683 22.35,8.342 21.933,8.342L21.925,8.342C21.508,8.342 21.165,8.683 21.163,9.1L21.163,16.572C21.157,17.685 20.239,18.598 19.126,18.598L19.104,18.598C17.991,18.598 17.073,17.685 17.067,16.572L17.067,4.072C17.05,3.652 16.699,3.317 16.279,3.319C15.859,3.316 15.508,3.651 15.49,4.071L15.489,19.975C15.482,21.092 14.558,22.006 13.441,22C13.437,22 13.434,22 13.43,22C12.317,22 11.399,21.087 11.393,19.974L11.393,18.04C11.393,17.684 11.685,17.395 12.045,17.395C12.405,17.395 12.697,17.684 12.697,18.04L12.697,19.974C12.697,20.237 12.839,20.48 13.069,20.612C13.299,20.743 13.583,20.743 13.813,20.612C14.042,20.482 14.185,20.238 14.185,19.974L14.185,4.07C14.185,2.927 15.122,2 16.278,2ZM10.604,2C11.76,2 12.697,2.927 12.697,4.07L12.697,15.593C12.695,15.947 12.403,16.238 12.049,16.238L12.041,16.238C11.687,16.238 11.395,15.947 11.393,15.593L11.393,4.07C11.39,3.64 11.034,3.288 10.604,3.29C10.174,3.288 9.818,3.64 9.815,4.07L9.815,18.083C9.808,19.212 8.874,20.137 7.745,20.131C6.615,20.137 5.681,19.213 5.674,18.083L5.674,9.1C5.672,8.683 5.329,8.342 4.912,8.342L4.904,8.342C4.487,8.342 4.144,8.683 4.142,9.1L4.142,12.9C4.136,14.026 3.208,14.949 2.082,14.949L2.06,14.949C0.934,14.949 0.006,14.026 0,12.9L0,11.522C0,11.165 0.292,10.876 0.652,10.876C1.012,10.876 1.305,11.166 1.305,11.522L1.305,12.9C1.305,13.318 1.648,13.657 2.071,13.657C2.494,13.657 2.837,13.318 2.837,12.9L2.837,9.099C2.844,7.97 3.778,7.045 4.907,7.051C6.037,7.045 6.971,7.969 6.978,9.099L6.978,18.083C6.978,18.502 7.321,18.841 7.745,18.841C8.168,18.841 8.511,18.502 8.511,18.083L8.511,4.07C8.511,2.927 9.448,2 10.604,2Z",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/minimax.svg"
+      },
+      {
+        "id": "muse",
+        "label": "Muse",
+        "d": "M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z",
+        "view_box": "0 0 24 24",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/muse.svg"
+      },
+      {
+        "id": "devin",
+        "label": "Devin",
+        "d": "M14.1174 13.9205C13.0208 13.2872 11.6461 13.2872 10.5495 13.9205L7.70744 15.5732C7.61476 15.6195 7.52209 15.6659 7.41397 15.6968C7.39852 15.6968 7.36763 15.6968 7.35218 15.7122C7.25951 15.7277 7.15139 15.7431 7.05871 15.7585H7.04327C7.04327 15.7585 7.02782 15.7585 7.01238 15.7585C6.9197 15.7585 6.82703 15.7431 6.73435 15.7277C6.71891 15.7277 6.70346 15.7277 6.68802 15.7277C6.59534 15.6968 6.50267 15.6659 6.40999 15.6195C6.40999 15.6195 6.39454 15.6195 6.3791 15.6195L0.679612 12.3296C0.278022 12.0979 0.0154432 11.6654 0.0154432 11.1866V4.6067C0.0154432 4.12788 0.262576 3.6954 0.679612 3.46371L6.3791 0.173765C6.78069 -0.0579216 7.2904 -0.0579216 7.69199 0.173765L13.3915 3.46371C13.3915 3.46371 13.3915 3.46371 13.4069 3.46371C13.4996 3.51005 13.5768 3.57183 13.6541 3.64906C13.6541 3.64906 13.6695 3.66451 13.6849 3.67995C13.7467 3.74174 13.8085 3.81897 13.8549 3.8962C13.8549 3.8962 13.8703 3.91164 13.8703 3.94253C13.9166 4.03521 13.963 4.12788 13.9784 4.22056C13.9784 4.236 13.9784 4.26689 13.9939 4.28234C14.0093 4.37501 14.0402 4.48313 14.0402 4.59125V7.8812C14.0402 9.14776 14.7198 10.3371 15.8165 10.9704C16.9131 11.6036 18.2878 11.6036 19.3844 10.9704L22.2265 9.31766C22.3191 9.27132 22.4118 9.22499 22.5199 9.19409C22.5354 9.19409 22.5663 9.19409 22.5817 9.17865C22.6744 9.1632 22.7825 9.14776 22.8752 9.13231H22.9215C23.0142 9.13231 23.1069 9.14776 23.1995 9.1632C23.215 9.1632 23.2304 9.1632 23.2459 9.1632C23.3386 9.19409 23.4312 9.22499 23.5239 9.27132C23.5239 9.27132 23.5393 9.27132 23.5548 9.27132L29.2543 12.5613C29.6559 12.793 29.9185 13.2254 29.9185 13.7043V20.2842C29.9185 20.763 29.6713 21.1955 29.2543 21.4271L23.5548 24.7171C23.5548 24.7171 23.5393 24.7171 23.5239 24.7171C23.4312 24.7634 23.3386 24.8098 23.2459 24.8252C23.2304 24.8252 23.215 24.8252 23.1995 24.8252C23.1069 24.8407 23.0142 24.8561 22.9215 24.8561C22.9215 24.8561 22.9061 24.8561 22.8906 24.8561C22.798 24.8561 22.6898 24.8407 22.5972 24.8098C22.5817 24.8098 22.5508 24.8098 22.5354 24.7943C22.4427 24.7634 22.3346 24.7325 22.2419 24.6708L19.3999 23.0181C18.3032 22.3848 16.9286 22.3848 15.8319 23.0181C14.7353 23.6513 14.0556 24.8407 14.0556 26.1072V29.3972C14.0556 29.5053 14.0402 29.6134 14.0093 29.7061C14.0093 29.7215 14.0093 29.7524 13.9939 29.7679C13.963 29.8605 13.9321 29.9532 13.8857 30.0459C13.8857 30.0459 13.8703 30.0768 13.8549 30.0922C13.8085 30.1694 13.7467 30.2467 13.6849 30.3085C13.6849 30.3085 13.6695 30.3239 13.6541 30.3394C13.5768 30.4166 13.4996 30.4784 13.4069 30.5247C13.4069 30.5247 13.4069 30.5247 13.3915 30.5247L7.69199 33.8146C7.4912 33.9382 7.25951 34 7.02782 34C6.79614 34 6.56445 33.9382 6.36365 33.8146L0.664168 30.5247C0.262579 30.293 0 29.8605 0 29.3817V22.8018C0 22.323 0.247133 21.8905 0.664168 21.6588L6.36365 18.3689C6.36365 18.3689 6.3791 18.3689 6.39455 18.3689C6.48722 18.3225 6.5799 18.2762 6.67257 18.2608C6.67257 18.2608 6.70346 18.2608 6.71891 18.2608C6.81158 18.2299 6.90425 18.2299 6.99693 18.2299H7.04327C7.13594 18.2299 7.24406 18.2453 7.33674 18.2762C7.35218 18.2762 7.38307 18.2762 7.39852 18.2762C7.49119 18.3071 7.59932 18.338 7.69199 18.3998L10.534 20.0525C11.6307 20.6857 13.0053 20.6857 14.102 20.0525C15.1986 19.4192 15.8782 18.2299 15.8782 16.9633C15.8782 15.6968 15.1986 14.5074 14.102 13.8742V13.8587L14.1174 13.9205Z",
+        "view_box": "0 0 29.9185 34",
+        "paint": "fill",
+        "fill_rule": "nonzero",
+        "source": "omarchy.agents/assets/devin.svg"
+      },
+      {
+        "id": "gemini",
+        "label": "Gemini mark (twins)",
+        "d": "M9 7.5a4.5 4.5 0 1 1 0 9a4.5 4.5 0 1 1 0-9zM15 7.5a4.5 4.5 0 1 1 0 9a4.5 4.5 0 1 1 0-9z"
+      },
+      {
+        "id": "circle",
+        "label": "Circle",
+        "d": "M12 5a7 7 0 1 1 0 14a7 7 0 1 1 0-14z"
+      },
+      {
+        "id": "square",
+        "label": "Square",
+        "d": "M6 6h12v12H6z"
+      },
+      {
+        "id": "triangle",
+        "label": "Triangle",
+        "d": "M12 5l7.5 13h-15z"
+      },
+      {
+        "id": "diamond",
+        "label": "Diamond",
+        "d": "M12 4l8 8-8 8-8-8z"
+      },
+      {
+        "id": "star",
+        "label": "Star",
+        "d": "M12 4.5l2.3 4.8 5.2.6-3.9 3.5 1.1 5.1L12 16l-4.7 2.5 1.1-5.1-3.9-3.5 5.2-.6z"
+      },
+      {
+        "id": "hex",
+        "label": "Hexagon",
+        "d": "M12 4l7 4v8l-7 4-7-4V8z"
+      }
+    ],
+    "defaults": {
+      "glyph": {
+        "claude": "claude",
+        "codex": "codex",
+        "cursor": "cursor",
+        "agy": "agy",
+        "gemini": "gemini",
+        "antigravity": "agy",
+        "grokbot": "grokbot",
+        "grok": "grok",
+        "copilot": "copilot",
+        "opencode": "opencode",
+        "kimi": "kimi",
+        "qwen": "qwen",
+        "deepseek": "deepseek",
+        "ollama": "ollama",
+        "zai": "zai",
+        "openrouter": "openrouter",
+        "minimax": "minimax",
+        "muse": "muse",
+        "devin": "devin"
+      },
+      "colors": {
+        "claude": [
+          "yellow",
+          "magenta",
+          "red"
+        ],
+        "codex": [
+          "green",
+          "cyan",
+          "blue"
+        ],
+        "cursor": [
+          "cyan",
+          "blue"
+        ],
+        "gemini": [
+          "blue",
+          "magenta"
+        ],
+        "grok": [
+          "magenta",
+          "red"
+        ],
+        "copilot": [
+          "neutral",
+          "blue"
+        ],
+        "agy": [
+          "blue",
+          "magenta"
+        ],
+        "grokbot": [
+          "magenta",
+          "red"
+        ],
+        "opencode": [
+          "neutral",
+          "cyan"
+        ]
+      },
+      "color": "neutral"
+    },
+    "badge_max": 2,
+    "image_max_bytes": 61440,
+    "image_px": 96
+  },
+  "cleanup": {
+    "labels": {
+      "open": "Clean up",
+      "open_all": "Clean up Herdr",
+      "title": "Clean up Herdr panes",
+      "checking": "Checking panes…",
+      "closing": "Closing panes…",
+      "intro": "Closes only the panes you tick. Folders, worktrees and branches stay on disk.",
+      "none": "Nothing to clean up.",
+      "excluded": "Not included",
+      "off": "Clean up is off for this workspace.",
+      "allow": "Allow clean up here",
+      "confirm": "Close {n} pane(s). You cannot undo this.",
+      "pick": "Tick the panes to close",
+      "closed": "Closed",
+      "skipped": "Not closed",
+      "failed": "Could not close",
+      "log": "Recently closed",
+      "again": "Check again",
+      "cancel": "Cancel",
+      "close": "Close"
+    },
+    "poll_ms": 800
+  },
+  "runtime": {
+    "services": {
+      "claude": {
+        "label": "Claude Code",
+        "short": "CC",
+        "name": "Claude"
+      },
+      "codex": {
+        "label": "Codex",
+        "short": "CX",
+        "name": "Codex"
+      },
+      "agy": {
+        "label": "Antigravity",
+        "short": "AG",
+        "name": "Antigravity"
+      },
+      "cursor": {
+        "label": "Cursor",
+        "short": "CU",
+        "name": "Cursor"
+      },
+      "gemini": {
+        "label": "Gemini CLI",
+        "short": "GE",
+        "name": "Gemini"
+      },
+      "opencode": {
+        "label": "opencode",
+        "short": "OC",
+        "name": "opencode"
+      }
+    },
+    "effort_steps": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "effort_below_steps": [
+      "none",
+      "minimal"
+    ],
+    "effort_words": {
+      "none": "none",
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "extra high",
+      "max": "max"
+    },
+    "labels": {
+      "runs_on": "Runs on",
+      "model": "Model",
+      "effort": "Effort",
+      "account": "Account",
+      "unknown": "unknown",
+      "model_unknown": "model unknown",
+      "effort_unknown": "effort unknown",
+      "effort_word": "effort {word}",
+      "effort_steps": "effort {word}, {n} of {steps}",
+      "from_trace": "session trace, as of {time}",
+      "from_trace_reading": "session trace (still reading it)",
+      "from_launch": "set at launch; the agent can change it later",
+      "account_from": "Account: {source}.",
+      "source": "{what}: {source}.",
+      "model_and_effort": "Model and effort",
+      "not_recorded": "Model and effort are not recorded for this agent: no session trace and no launch record.",
+      "in_process": "Runs inside its parent agent. Its own model and effort are not recorded.",
+      "legend_title": "Service, model and effort",
+      "legend_badge": "model in use and its effort (Opus 5.5 · high, Sol 6.2 · high, ...), the same chip for every service; the service by name in a dashed chip when the model is not recorded",
+      "legend_pips": "effort, low to max",
+      "legend_unknown": "Without a recorded model the badge names the service (Claude, Codex) in a dashed chip and no dots are shown. Tap an agent to see the source.",
+      "badge_unknown": "{service}: model not recorded",
+      "badge_effort_unknown": "{model} · effort not recorded"
+    },
+    "effort_short": {
+      "none": "none",
+      "minimal": "min",
+      "low": "low",
+      "medium": "med",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  "files": {
+    "pattern": "(?<![A-Za-z0-9_/.:~@%+=,-])((?:~/|/|\\./)?(?:[A-Za-z0-9_@%+=,~-][A-Za-z0-9_@%+=,.~-]*/)*[A-Za-z0-9_@%+=,~-][A-Za-z0-9_@%+=,.~-]*\\.(?:md|markdown|mdx|txt|text|rst|org|adoc|log|csv|tsv))(?!\\.?[A-Za-z0-9_/-])",
+    "extensions": [
+      "md",
+      "markdown",
+      "mdx",
+      "txt",
+      "text",
+      "rst",
+      "org",
+      "adoc",
+      "log",
+      "csv",
+      "tsv"
+    ],
+    "markdown": [
+      "md",
+      "markdown",
+      "mdx"
+    ],
+    "max_bytes": 1048576,
+    "labels": {
+      "open": "Open {name}",
+      "title": "File",
+      "close": "Close",
+      "copy": "Copy path",
+      "copied": "Path copied",
+      "copy_failed": "Could not copy; the path is selected",
+      "modified": "Changed {when}",
+      "loading": "Reading…",
+      "diff_vs_original": "Diff vs original",
+      "diff_vs_draft": "Diff vs draft",
+      "diff_against": "Compared with {name}",
+      "diff_same": "No differences.",
+      "diff_skip": "{n} unchanged lines",
+      "read_only": "Read-only. Opened on request, never sent to the summary agent.",
+      "plain": "Plain text"
+    }
+  }
+}

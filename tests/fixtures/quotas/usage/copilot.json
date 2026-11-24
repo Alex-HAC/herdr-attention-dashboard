@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "copilot",
+  "name": "GitHub Copilot",
+  "updatedAt": "2026-11-14T10:00:00+00:00",
+  "ready": true,
+  "tierLabel": "Pro",
+  "email": "copilot-secret@example.com",
+  "access_token": "tok_should_never_leak",
+  "limits": [
+    {
+      "label": "Monthly",
+      "percent": 0.4,
+      "resetsAt": "2026-11-15T08:00:00+00:00"
+    }
+  ],
+  "limitsStale": true,
+  "limitsFetchedAt": 1794614447728
+}

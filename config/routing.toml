@@ -1,0 +1,165 @@
+# Example agent routing defaults: copy and edit for your own accounts, models and projects.
+# Reasoning: docs/AGENT-ROUTING.md. "inferred = true" marks guessed values, not stated preferences.
+# Permission flags live in [permissions.yolo] and are added by the wrapper, not repeated per agent.
+# The spawn wrapper reads this to suggest/default an agent per role; coordinators get it injected.
+version = 1
+
+[policy]
+coordinator_thrift = true            # wake on worker events only; 2-3 line reports
+frugal_below_claude_pct_left = 50    # inferred threshold
+never_paid_extra_credits = true
+expensive_tiers_need_ask = ["codex:astra", "codex-work:xhigh", "claude:fable for routine work"]
+reshuffle_on_quota_wall = true
+visible_panes_not_subagents = true
+answer_questions_then_go = true      # decide the safe/recommended option, note it, continue
+# Stated, Nov 13: every agent starts with yolo/full permissions unless there is a rare explicit reason
+# (e.g. sandboxing a test). The wrapper adds [permissions.yolo] args; opt out with --sandbox "<reason>".
+default_permissions = "yolo"
+
+[permissions.yolo]
+claude = ["--dangerously-skip-permissions"]
+codex  = ["--yolo"]
+cursor = ["--yolo", "--trust"]
+agy    = ["--dangerously-skip-permissions"]  # verified with installed agy --help, 13 Nov 2026
+
+# Accounts are chosen per project, never globally. Values name a config home, never a credential.
+[accounts]
+claude-personal = { env = { CLAUDE_CONFIG_DIR = "~/.claude-personal" } }
+claude-work     = { env = {} }                                   # default ~/.claude (work)
+codex-personal  = { env = { CODEX_HOME = "~/.codex-personal" } }
+codex-work      = { env = {} }                                   # default ~/.codex (work)
+agy-work        = { env = {} }                                   # agy default account; opt in per project
+cursor-work      = { env = {} }                                   # cursor-agent, team login
+
+[[project]]
+match = "~/Projects/herdr-attention-dashboard"
+accounts = ["codex-work", "claude-work"]  # example: this project runs on the work accounts
+[[project]]
+match = "~/Work/**"
+accounts = ["claude-work", "claude-personal", "codex-work", "cursor-work"]
+
+# cost_tier: 1 = cheapest/most plentiful ... 5 = scarcest
+[agents.fable]
+kind = "claude"
+model = "fable"
+effort = "high"
+cost_tier = 5
+args = ["--model", "fable", "--effort", "high"]
+good_for = ["architecture", "design-doc", "coordinator", "independent-review", "ui-ux-review"]
+avoid_for = ["gruntwork", "long-tests", "polling"]
+note = "Scarce: draws usage fast"
+
+[agents.opus]
+kind = "claude"
+model = "claude-opus-5-5"
+effort = "medium"
+cost_tier = 4
+args = ["--model", "claude-opus-5-5", "--effort", "medium"]
+good_for = ["ui-ux-impl", "coordinator", "design-doc", "review"]
+avoid_for = ["gruntwork", "backend-bulk"]
+
+[agents.sonnet]
+kind = "claude"
+model = "sonnet"
+effort = "medium"
+cost_tier = 3
+inferred = true
+args = ["--model", "sonnet", "--effort", "medium"]
+good_for = ["harness-runs", "small-slices", "router"]
+avoid_for = ["review", "design", "ui-ux-impl"]
+
+[agents.codex-sol]
+kind = "codex"
+model = "gpt-6.2-sol"
+effort = "high"
+cost_tier = 2
+args = ["-m", "gpt-6.2-sol", "-c", "model_reasoning_effort=high"]
+good_for = ["backend", "refactor", "gruntwork", "tests", "pr-review", "cleanup", "investigation"]
+avoid_for = ["ui-ux-design", "architecture", "ui-ux-impl"]
+
+[agents.codex-astra]
+kind = "codex"
+model = "astra"
+effort = "high"
+cost_tier = 4
+ask_first = true
+note = "Uses quota up fast; only if really needed"
+
+[agents.cursor-grok]
+kind = "cursor"
+model = "grok-4.7-high"
+cost_tier = 1
+args = ["--model", "grok-4.7-high"]
+good_for = ["gruntwork", "docs", "screenshots", "fixtures", "ui-impl-to-spec", "investigation"]
+avoid_for = ["architecture", "ui-ux-design", "safety-critical"]
+note = "Still works when Cursor premium quota is hit"
+
+[agents.cursor-sol]
+kind = "cursor"
+model = "gpt-5.6-sol-high"
+cost_tier = 2
+premium = true
+args = ["--model", "gpt-5.6-sol-high"]
+good_for = ["investigation", "backend", "pr-review"]
+avoid_for = ["ui-ux-design"]
+
+[agents.cursor-opus]
+kind = "cursor"
+model = "claude-opus-5-thinking-high"
+cost_tier = 3
+premium = true
+args = ["--model", "claude-opus-5-thinking-high"]
+good_for = ["ui-ux-impl"]
+avoid_for = ["gruntwork"]
+
+[agents.agy]
+kind = "agy"
+cost_tier = 2
+inferred = true
+good_for = ["build-checks", "visual-checks"]
+avoid_for = ["critical-path"]
+note = "Can hit capacity and block on file-approval dialogs; pair with a reviewer"
+
+# Role -> ordered preference (first available with quota wins; never pick from avoid_for).
+[roles]
+coordinator        = ["fable", "opus", "sonnet"]
+architecture       = ["fable", "opus"]
+independent-review = ["fable", "opus"]
+ui-ux-review       = ["fable", "opus"]
+ui-ux-impl         = ["opus", "cursor-opus", "cursor-grok"]   # cursor-grok only on a written layout/wording spec
+backend            = ["codex-sol", "cursor-sol", "cursor-grok"]
+gruntwork          = ["cursor-grok", "codex-sol"]
+investigation      = ["cursor-sol", "cursor-grok", "codex-sol"]
+pr-review          = ["codex-sol", "cursor-sol", "opus"]
+tests              = ["codex-sol", "cursor-grok"]
+docs               = ["cursor-grok", "codex-sol"]
+build-visual-check = ["agy", "codex-sol"]
+
+[fallback]   # quota wall on provider -> try next
+codex  = ["cursor", "claude"]
+cursor = ["codex", "claude"]   # cursor premium out: stay on cursor-grok first
+claude = ["codex", "cursor"]   # move only jobs not in the role's avoid list; park design until Claude resets
+
+# Herdr layout and labeling. See docs/AGENT-ROUTING.md "Herdr layout and labeling".
+[layout]
+max_panes_per_tab = 4                 # inferred number; Alex stated "not too many panes per tab"
+workspace_per = "project-or-run"      # inferred
+coordinator_own_tab = true            # inferred from the Fable coordinator layout
+group_workers_by = "provider"         # "provider" | "role"; inferred
+pane_name_template = "{role}-{provider}-{task}"   # stated "properly labeled"; scheme inferred
+pane_name_max_len = 32                # Herdr limit: [a-z][a-z0-9_-]{0,31}
+coordinator_tab_template = "{name} coordinator"
+worker_tab_template = "{group}"       # overflow tabs get "-2", "-3", ...
+set_title_and_tags_at_spawn = true
+no_focus = true                       # stated: never steal Alex's focus
+new_tab_when_full = true              # inferred
+close_finished_after = "report-and-merge"   # coordinator closes; timing inferred
+forbid_numeric_tab_labels = true
+
+[layout.role_abbrev]
+coordinator = "coord"
+worker = "wrk"
+pr-review = "rev"
+ui-ux-impl = "ui"
+investigation = "inv"
+gruntwork = "wrk"

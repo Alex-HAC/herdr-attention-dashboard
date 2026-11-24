@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "grokbot",
+  "name": "Grok Bot",
+  "updatedAt": "2026-11-15T11:21:31.652749+00:00",
+  "ready": true,
+  "tierLabel": "Grok Bot Plan",
+  "limits": [
+    {
+      "label": "Weekly",
+      "percent": 0.11315401,
+      "resetsAt": "2026-11-19T14:51:25.198000+00:00"
+    }
+  ],
+  "limitsStale": false,
+  "limitsFetchedAt": 1794741691988
+}

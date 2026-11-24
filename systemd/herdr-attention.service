@@ -1,0 +1,25 @@
+[Unit]
+Description=Herdr attention dashboard collector (read-only)
+Documentation=file://%h/Projects/herdr-attention-dashboard/README.md
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/herdr-attention run
+Restart=on-failure
+RestartSec=5
+
+# %t/herdr-attention holds the local API socket. The collector creates
+# ~/.local/state/herdr-attention itself: StateDirectory= is avoided because
+# systemd would symlink it to ~/.config/herdr-attention when that exists.
+RuntimeDirectory=herdr-attention
+RuntimeDirectoryMode=0700
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+PrivateTmp=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+UMask=0077
+
+[Install]
+WantedBy=default.target

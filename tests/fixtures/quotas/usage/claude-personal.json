@@ -1,0 +1,12 @@
+{
+  "authHelpText": "",
+  "hasLocalStats": false,
+  "id": "claude-personal",
+  "limits": [],
+  "name": "Claude Personal",
+  "ready": false,
+  "schemaVersion": 1,
+  "tierLabel": "",
+  "updatedAt": "2026-11-15T11:21:31.644755+00:00",
+  "usageStatusText": "Collector needs an update"
+}

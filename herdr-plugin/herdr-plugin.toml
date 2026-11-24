@@ -1,0 +1,19 @@
+id = "herdr-attention"
+name = "Herdr Attention Tree"
+version = "0.9.10.1"
+min_herdr_version = "0.9.1"
+description = "Project-routed agent tree from the attention collector's session relationship registry"
+platforms = ["linux"]
+
+[[startup]]
+command = ["./run", "status"]
+
+[[actions]]
+id = "enable-tree"
+title = "Enable attention tree"
+command = ["./run", "true"]
+
+[[actions]]
+id = "clear-tree"
+title = "Clear attention tree"
+command = ["./run", "false"]

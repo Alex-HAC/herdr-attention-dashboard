@@ -1,0 +1,6 @@
+{
+  "name": "uiux-coord-fable", "pane_id": "w8:p2", "identity": "claude:uiux-wrapup-regression",
+  "status": "done", "kind": "completion", "present": true, "acked": false,
+  "last_assistant": {"text": "Glad it holds up… Still open: … better picked up after the reset or by Codex builders", "at": 1794759540, "last_role": "assistant"},
+  "summary": {"current": false, "needs_you": {"kind": "decision", "ask": "Review five decisions before continuing."}}
+}

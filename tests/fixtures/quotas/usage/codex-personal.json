@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "codex-personal",
+  "name": "Codex",
+  "updatedAt": "2026-11-15T11:42:56.149431+00:00",
+  "ready": true,
+  "tierLabel": "Plus",
+  "usageStatusText": "",
+  "authHelpText": "",
+  "limits": [
+    {
+      "label": "5h window",
+      "percent": 0.0,
+      "resetsAt": "2026-11-15T16:42:56+00:00"
+    },
+    {
+      "label": "Weekly (7-day)",
+      "percent": 0.49,
+      "resetsAt": "2026-11-15T14:34:18+00:00"
+    }
+  ],
+  "limitsStale": false,
+  "limitsFetchedAt": 1794742976149,
+  "accounts": [
+    {
+      "id": "personal",
+      "label": "Personal",
+      "plan": "Plus",
+      "active": true,
+      "primary": true,
+      "limits": [
+        {
+          "label": "5h window",
+          "percent": 0.0,
+          "resetsAt": "2026-11-15T16:42:56+00:00"
+        },
+        {
+          "label": "Weekly (7-day)",
+          "percent": 0.49,
+          "resetsAt": "2026-11-15T14:34:18+00:00"
+        }
+      ],
+      "stale": false,
+      "fetchedAt": 1794742976149,
+      "usageStatusText": "",
+      "authHelpText": "",
+      "retryAdvised": false
+    }
+  ]
+}

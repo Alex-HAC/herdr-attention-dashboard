@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "id": "claude",
+  "name": "Claude Code",
+  "updatedAt": "2026-11-15T11:21:32.270992+00:00",
+  "ready": true,
+  "tierLabel": "Pro",
+  "usageStatusText": "",
+  "authHelpText": "",
+  "limits": [
+    {
+      "label": "Session (5-hour)",
+      "percent": 0.16,
+      "resetsAt": "2026-11-15T15:50:00.201308+00:00"
+    },
+    {
+      "label": "Weekly (7-day)",
+      "percent": 0.29,
+      "resetsAt": "2026-11-16T19:00:00.201327+00:00"
+    },
+    {
+      "label": "Fable Weekly",
+      "title": "Fable Weekly",
+      "percent": 0.58,
+      "resetsAt": "2026-11-16T19:00:00.201569+00:00"
+    }
+  ],
+  "limitsStale": false,
+  "limitsFetchedAt": 1794741692270,
+  "accountSwitch": {
+    "mode": "manual",
+    "threshold": 95
+  },
+  "accounts": [
+    {
+      "id": "main",
+      "label": "Main",
+      "plan": "Team 5x",
+      "primary": true,
+      "active": false,
+      "email": "work-account@example.com",
+      "fetchedAt": 1794614447728,
+      "stale": true,
+      "usageStatusText": "Limits paused",
+      "authHelpText": "Claude Code's access token has lapsed \u2014 showing the last known limits. Start Claude Code to refresh it; signing in again is not needed.",
+      "limits": [
+        {
+          "label": "Session (5-hour)",
+          "percent": 0.0,
+          "resetsAt": ""
+        },
+        {
+          "label": "Weekly (7-day)",
+          "percent": 0.94,
+          "resetsAt": "2026-11-18T04:59:59.608407+00:00"
+        },
+        {
+          "label": "Fable Weekly",
+          "percent": 0.13,
+          "resetsAt": "2026-11-18T04:59:59.608599+00:00",
+          "title": "Fable Weekly"
+        }
+      ]
+    },
+    {
+      "id": "personal",
+      "label": "Personal",
+      "plan": "Pro",
+      "primary": false,
+      "active": true,
+      "email": "personal-account@example.com",
+      "fetchedAt": 1794741692270,
+      "stale": false,
+      "usageStatusText": "",
+      "authHelpText": "",
+      "limits": [
+        {
+          "label": "Session (5-hour)",
+          "percent": 0.16,
+          "resetsAt": "2026-11-15T15:50:00.201308+00:00"
+        },
+        {
+          "label": "Weekly (7-day)",
+          "percent": 0.29,
+          "resetsAt": "2026-11-16T19:00:00.201327+00:00"
+        },
+        {
+          "label": "Fable Weekly",
+          "title": "Fable Weekly",
+          "percent": 0.58,
+          "resetsAt": "2026-11-16T19:00:00.201569+00:00"
+        }
+      ]
+    }
+  ],
+  "todayPrompts": 0,
+  "totalPrompts": 3057
+}
