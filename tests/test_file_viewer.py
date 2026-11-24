@@ -16,7 +16,7 @@ from unittest import mock
 from herdr_attention import files
 from herdr_attention.files import FileError
 from herdr_attention.ui_contract import CONTRACT
-from tests.test_tailnet_access import NAS, PHONE, Servers
+from tests.test_tailnet_access import SERVER, PHONE, Servers
 
 DOC = "# Working styles\n\nHow agents work with **Alex**.\n"
 DRAFT = "# Working styles\n\nHow agents work with **Alex**.\n\n## Agents\n\nAsk before merging.\n"
@@ -202,9 +202,9 @@ class Endpoint(Home, Servers):
             self.assertNotIn(b"private", body)
 
     def test_the_allow_list_applies(self):
-        self.assertEqual(self.desk("POST", {"entries": ["pixel-10a"], "enabled": True})[0], 200)
+        self.assertEqual(self.desk("POST", {"entries": ["phone"], "enabled": True})[0], 200)
         cookie, _ = self.login(PHONE)
-        status, _, raw = self.get(f"/api/file?identity={self.identity}&path=docs/working-styles.md", ip=NAS, cookie=cookie)
+        status, _, raw = self.get(f"/api/file?identity={self.identity}&path=docs/working-styles.md", ip=SERVER, cookie=cookie)
         self.assertEqual((status, raw), (403, b"forbidden\n"))
 
     def test_the_summariser_never_sees_files(self):

@@ -200,9 +200,9 @@ class GraphPage(unittest.TestCase):
             self.assertEqual(svg.count(" active"), 3, "all links of the selected agent highlighted, incl. cross-workspace")
             self.assertIn(" dim", svg)
             dom = self.pages[("selected", device)]["dom"]
-            for text in ("ui-builder", "Metrics", "Connections", "Recent history", "Conversation and terminal",
-                         "Codex total_token_usage", "session start in the trace", "exact", "Show messages",
-                         "Tokens are not money"):
+            # The details view: status card, Needs you, action bar and the four doors (Usage and
+            # Activity hold the metrics and messages; tests/test_details_view.py opens them).
+            for text in ("ui-builder", "Run npm test in ./cart?", "Needs you · 1", "Status", "Activity", "Usage", "Links"):
                 self.assertIn(text, dom, text)
 
     def test_privacy_layout_and_no_side_effects(self):
@@ -231,7 +231,7 @@ class RelationshipsInTheGraph(unittest.TestCase):
         cls.data = page_fixture()
         lead = urllib.parse.quote(cls.data["ids"]["lead"], safe="")
         cls.graph = run(cls.data, "/graph", 390, 900)
-        cls.lead = run(cls.data, f"/graph/{lead}", 1280, 900)
+        cls.lead = run(cls.data, f"/graph/{lead}", 1280, 900, script="document.querySelector('[data-door=links]').click();")
         node = f'[data-id="{cls.data["ids"]["etl"]}"]'
         # touch: pointerdown + pointerup on a node selects it
         cls.tap = run(cls.data, "/graph", 390, 900, script=f"""
@@ -251,13 +251,13 @@ class RelationshipsInTheGraph(unittest.TestCase):
 
     def test_inspector_shows_provenance_editor_and_history(self):
         dom = self.lead["dom"]
-        for text in ("coordinates", "registered by the launch helper", "declared by you (cli)", "coordinator (manual",
-                     "checkout (manual", "Declare role, team or reporting line", "Relationship history", "Hand over"):
+        for text in ("coordinates", "registered by the launch helper", "declared by you (cli)", "role: coordinator",
+                     "team: checkout", "manual, since", "Declare role, team or reporting line", "Relationship history", "Hand over"):
             self.assertIn(text, dom, text)
 
     def test_touch_and_keyboard_select_a_node(self):
         etl = urllib.parse.quote(self.data["ids"]["etl"], safe="")
         for page in (self.tap, self.key):
             self.assertEqual(page["probe"]["hash"], f"#/g/{etl}")
-            self.assertIn("part of a reporting cycle", page["dom"])
+            self.assertIn('title="Part of a reporting cycle"', page["dom"], "the Links door flags the cycle")
             self.assertFalse([c for c in page["probe"]["calls"] if c[1] == "POST"], "selecting changes nothing")

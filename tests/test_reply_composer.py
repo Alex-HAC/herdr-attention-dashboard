@@ -58,7 +58,7 @@ window.fetch = async (path, init) => {
 };
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const id = FIXTURE.ids.ui;
-const hint = !!document.querySelector('.terminal-hint');
+const hint = !!document.querySelector('.terminal-hint:not(.dialog-row *)');   // the dialog row may explain its own choices
 openReply(id, 'Should I bump the schema?',null,null,{steer:true});
 const root = document.getElementById('composer');
 const radios = [...root.querySelectorAll('input[type=radio]')];

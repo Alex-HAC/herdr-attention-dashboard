@@ -1,6 +1,6 @@
 id = "herdr-attention"
 name = "Herdr Attention Tree"
-version = "0.9.10.1"
+version = "0.9.11.1"
 min_herdr_version = "0.9.1"
 description = "Project-routed agent tree from the attention collector's session relationship registry"
 platforms = ["linux"]

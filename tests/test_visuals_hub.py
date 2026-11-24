@@ -10,6 +10,7 @@ from pathlib import Path
 from herdr_attention.api import PhoneServer, make_handler, serve
 from herdr_attention.store import Store, SCHEMA_VERSION
 from herdr_attention.ui_contract import hash_path, api_path
+from herdr_attention.visuals import placeholder_jpeg_bytes
 from herdr_attention.notify_prefs import enabled
 from herdr_attention.config import DEFAULTS, Settings
 from tests.helpers import settings
@@ -193,7 +194,7 @@ class HubUi(unittest.TestCase):
           "relative_path": "screen.svg", "identity": identity, "agent": "builder", "at": 100, "video": False,
           "source": "trace", "url": "data:image/svg+xml,<svg/>", "thumbnail": "data:image/svg+xml,<svg/>",
           "download": "/api/visuals/" + "a" * 32 + "/download", "seen": False}]}
-        result = reading(run(f, "/a/" + identity, 390, 900, script="""
+        result = reading(run(f, "/a/" + identity + "/activity", 390, 900, script="""
           document.querySelector('.latest-visuals').open=true;await new Promise(r=>setTimeout(r,300));
           document.querySelector('.visual-tile').click();
           const dialog=document.querySelector('#visual-viewer');
@@ -216,14 +217,14 @@ class ThumbnailsAndCache(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name) / "work"
         self.root.mkdir()
-        (self.root / "shot.png").write_bytes(b"original-png-bytes-should-not-be-served-as-thumb")
+        (self.root / "shot.png").write_bytes(b"original-png-bytes-ok-as-fallback")
         self.collector = make_collector()
         self.addCleanup(self.collector.store.close)
         self.collector.engine.agents["claude:a"]["cwd"] = str(self.root)
         # Discover so records exist, without depending on live ffmpeg.
         self.collector.latest_visuals(identity="claude:a")
 
-    def test_failed_preview_does_not_return_the_original(self):
+    def test_failed_preview_falls_back_to_the_original(self):
         from unittest.mock import patch
         from types import SimpleNamespace
         item, = self.collector.latest_visuals(identity="claude:a")["items"]
@@ -231,16 +232,16 @@ class ThumbnailsAndCache(unittest.TestCase):
             file, mime, size = self.collector.visual_file(item["id"], True)
             with file:
                 data = file.read()
-        self.assertNotIn(b"original-png-bytes-should-not-be-served-as-thumb", data)
-        self.assertTrue(mime.startswith("image/"))
-        self.assertLess(size, 2000)
+        self.assertEqual(data, b"original-png-bytes-ok-as-fallback")
+        self.assertEqual(mime, "image/png")
+        self.assertEqual(size, len(data))
 
     def test_thumbnail_has_long_cache_and_etag(self):
         from unittest.mock import patch
         from types import SimpleNamespace
         item, = self.collector.latest_visuals(identity="claude:a")["items"]
         def ffmpeg(command, **kwargs):
-            Path(command[-1]).write_bytes(b"jpeg-thumb-bytes")
+            Path(command[-1]).write_bytes(placeholder_jpeg_bytes())
             return SimpleNamespace(returncode=0)
         self.server = PhoneServer(("127.0.0.1", 0), make_handler(self.collector, local=False))
         serve(self.server)

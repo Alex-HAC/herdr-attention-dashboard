@@ -48,21 +48,24 @@ class Phase4(unittest.TestCase):
     def test_agent_facts_recent_history_actions_and_approval_hint_are_visible(self):
         data = page_fixture()
         r = reading(run(data, '/a/' + urllib.parse.quote(data['ids']['ui'], safe=''), 412, 915, script="""
+          // Details review 2026-11-24: the time in state is on the status card, history behind the Activity door.
           const main = document.querySelector('#app');
           document.body.dataset.reading = JSON.stringify({
-            stats: !!main.querySelector('.stat-row:not(details *)'),
-            recent: main.querySelectorAll('.recent-timeline .timeline > li').length,
-            primary: main.querySelectorAll('.summary .btn.primary').length,
+            stats: !!main.querySelector('.status-card .sc-since')?.textContent,
+            recent: main.querySelector('[data-door=activity] .door-value')?.textContent || '',
+            primary: main.querySelectorAll('.details-main .btn.primary').length,
             menu: !!main.querySelector('.summary-menu'),
-            watch: !!main.querySelector('.detail-head .watch-toggle[aria-pressed]'),
+            watch: !!main.querySelector('.status-card .watch-toggle[aria-pressed]'),
             hint: main.querySelector('.terminal-hint')?.textContent,
-            reply: [...main.querySelectorAll('.summary button')].some(b=>b.textContent==='Reply'),
-            folded: !main.querySelector('details.more').open});
+            reply: [...main.querySelectorAll('.details-actions button')].some(b=>b.textContent==='Reply'),
+            folded: !main.querySelector('details.more')});
         """))
-        for key in ('stats', 'menu', 'watch', 'folded'):
+        for key in ('stats', 'watch', 'folded'):
             self.assertTrue(r[key], key)
-        self.assertEqual(r['recent'], min(3, len(data['details'][data['ids']['ui']]['activity'])))
-        self.assertEqual(r['primary'], 1)
+        self.assertFalse(r['menu'], 'the AI buttons are on the Status screen, not a menu')
+        self.assertTrue(r['recent'])
+        self.assertEqual(r['primary'], 1, 'Send in the dialog is the one filled button')
+        self.assertTrue(r['hint'])
         self.assertTrue(r['reply'], 'Reply remains findable at approval screens')
 
     def test_actual_transcript_selection_stays_docked_through_scroll_and_poll(self):

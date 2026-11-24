@@ -41,7 +41,8 @@ class PhoneFirstGlance(unittest.TestCase):
             a["is_coordinator"] = True
         ws["coordinators"] = [a["identity"] for a in members]
         dom = run(data, "/list", 390, 844)["dom"]
-        buttons = re.findall(r'class="btn status-report-button"[^>]*>([^<]*)<', dom)
+        # 0.9.11.0: an AI button (spark icon before the label).
+        buttons = re.findall(r'class="btn btn-ai status-report-button"[^>]*>.*?</svg>([^<]*)<', dom)
         self.assertEqual(len(buttons), 2)
         self.assertTrue(all(b.startswith("Status report: ") for b in buttons))
         self.assertEqual(len(set(buttons)), 2)

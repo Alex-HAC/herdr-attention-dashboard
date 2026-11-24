@@ -101,10 +101,27 @@ def open_beneath(root: Path, relative: Path):
 
 THUMB_PX = 320
 THUMB_CACHE_MAX = 2000
+THUMB_URL_GEN = 2  # bump when thumbnail bytes or cache rules change, so browsers refetch
+
+
+def is_valid_thumbnail(path: Path) -> bool:
+    """True when the file looks like a real JPEG or WebP, not a truncated or test stub."""
+    try:
+        if path.stat().st_size < 32:
+            return False
+        with path.open("rb") as fh:
+            head = fh.read(16)
+    except OSError:
+        return False
+    if head.startswith(bytes.fromhex("ffd8ff")):
+        return True
+    if head.startswith(b"RIFF") and head[8:12] == b"WEBP":
+        return True
+    return False
 
 
 def placeholder_jpeg_bytes() -> bytes:
-    """A tiny valid JPEG so a failed preview still paints a box, never the original file."""
+    """A tiny valid JPEG used only when no preview and no original image can be served."""
     return bytes.fromhex(
         "ffd8ffe000104a46494600010100000100010000"
         "ffdb004300010101010101010101010101010101010101010101010101010101010101010101"
@@ -131,8 +148,10 @@ def cached_thumbnail(cache: Path, source: str, file, extension: str,
     webp = cache / f"{stem}.webp"
     jpeg = cache / f"{stem}.jpg"
     for existing in (webp, jpeg):
-        if existing.exists() and existing.stat().st_size:
+        if existing.exists() and is_valid_thumbnail(existing):
             return existing
+        if existing.exists():
+            existing.unlink(missing_ok=True)
     old = sorted(list(cache.glob("*.jpg")) + list(cache.glob("*.webp")),
                  key=lambda p: p.stat().st_mtime, reverse=True)
     for entry in old[THUMB_CACHE_MAX - 1:]:
@@ -157,10 +176,10 @@ def cached_thumbnail(cache: Path, source: str, file, extension: str,
                  *formats[extension], "-i", f"/proc/self/fd/{file.fileno()}",
                  "-frames:v", "1", "-vf", scale, "-threads", "1", *encode, "-y", temporary],
                 pass_fds=(file.fileno(),), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=12)
-            if process.returncode == 0 and Path(temporary).stat().st_size:
+            if process.returncode == 0 and is_valid_thumbnail(Path(temporary)):
                 os.replace(temporary, cached)
                 temporary = None
-                if cached.exists() and cached.stat().st_size:
+                if cached.exists() and is_valid_thumbnail(cached):
                     return cached
         except (OSError, ValueError, subprocess.TimeoutExpired):
             pass
@@ -444,7 +463,13 @@ class Visuals:
                 mtime = int(float(item['modified_at']))
             except (TypeError, ValueError):
                 mtime = 0
-        token = f"{media_id}-{mtime}"
+        size = 0
+        if self.cache.is_dir():
+            for cached in (*self.cache.glob(f"{media_id}-*.webp"), *self.cache.glob(f"{media_id}-*.jpg")):
+                if is_valid_thumbnail(cached):
+                    size = cached.stat().st_size
+                    break
+        token = f"{media_id}-{mtime}-{size}-{THUMB_URL_GEN}"
         return '"' + hashlib.sha256(token.encode()).hexdigest()[:16] + '"'
 
     def prepare_thumbnails(self, view, items, limit=12) -> int:
@@ -479,11 +504,20 @@ class Visuals:
         if thumbnail:
             cached=cached_thumbnail(self.cache,f'{root/relative}:{info.st_mtime_ns}:{info.st_size}',file,extension,
                                     media_id=media_id, mtime_ns=info.st_mtime_ns)
-            file.close()
             if cached:
+                file.close()
                 kind='image/webp' if cached.suffix.lower()=='.webp' else 'image/jpeg'
                 return cached.open('rb'),kind,cached.stat().st_size
-            # Never fall back to the original: a failed preview is a tiny placeholder.
+            # Prefer the original image over a 1x1 placeholder so a failed preview still shows something.
+            if extension in {'png','jpg','jpeg','webp','gif'}:
+                try:
+                    file.seek(0)
+                    return file,mime,info.st_size
+                except OSError:
+                    file.close()
+                    file,info=open_beneath(root,relative)
+                    return file,mime,info.st_size
+            file.close()
             data=placeholder_jpeg_bytes()
             return io.BytesIO(data),'image/jpeg',len(data)
         return file,mime,info.st_size
@@ -525,7 +559,7 @@ class Visuals:
             stamp = int(float(stamp))
         except (TypeError, ValueError):
             stamp = 0
-        out['thumbnail'] = api_path('visual_thumbnail', item['id']) + f'?v={stamp}'
+        out['thumbnail'] = api_path('visual_thumbnail', item['id']) + f'?v={stamp}-{THUMB_URL_GEN}'
         if agent:
             out['workspace_id'] = agent.get('workspace_id') or out.get('workspace_id') or ''
             out['workspace_label'] = agent.get('workspace_label') or out.get('workspace_label') or ''

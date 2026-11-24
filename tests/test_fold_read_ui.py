@@ -72,7 +72,7 @@ class FoldReadUi(unittest.TestCase):
     def test_overview_and_parent_retain_fold_links_without_individual_stack(self):
         data=fold_fixture()
         parent=data['ids']['ui']
-        for route in ('/list','/a/'+quote(parent,safe='')):
+        for route in ('/list','/a/'+quote(parent,safe='')+'/links'):   # the parent's fold is on its Links screen
             with self.subTest(route=route):
                 r=reading(run(data,route,390,844,script="""
                   const fold=document.querySelector('details.subagent-fold');fold.open=true;

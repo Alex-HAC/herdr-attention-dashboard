@@ -50,7 +50,9 @@ class GraphStates(unittest.TestCase):
     def test_inspector_shows_raw_herdr_status_as_secondary_line(self):
         import urllib.parse
         data = page_fixture()
-        page = run(data, "/g/" + urllib.parse.quote(data["ids"]["ui"], safe=""), 1280, 900)
+        # Status › Why this state (details review 2026-11-24).
+        page = run(data, "/g/" + urllib.parse.quote(data["ids"]["ui"], safe=""), 1280, 900,
+                   script="document.querySelector('[data-door=status]').click();")
         self.assertIn("Herdr status: blocked", page["dom"])
 
 

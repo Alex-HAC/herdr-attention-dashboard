@@ -71,4 +71,4 @@ class EmptyWorkspaces(unittest.TestCase):
     def test_gone_agent_history_is_still_accessible(self):
         from urllib.parse import quote
         page=run(self.data,'/a/'+quote(self.ghost,safe=''),390,900)
-        self.assertIn('This agent is no longer running',page['dom'])
+        self.assertIn('No longer running',page['dom'])

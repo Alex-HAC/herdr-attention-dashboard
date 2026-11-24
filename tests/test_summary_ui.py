@@ -20,16 +20,17 @@ class SummaryCards(unittest.TestCase):
         q = lambda i: urllib.parse.quote(i, safe="")
         cls.ui_route = f"/a/{q(ids['ui'])}"
         cls.overview = {w: run(cls.data, "/list", w, 900) for w in (390, 1280)}
-        cls.ui = {w: run(cls.data, cls.ui_route, w, 900) for w in (390, 1280)}
+        # The AI summary is on the Status screen of the details view (details review 2026-11-24).
+        cls.ui = {w: run(cls.data, cls.ui_route + "/status", w, 900) for w in (390, 1280)}
         qa = next(a for a in cls.data["view"]["agents"] if a["name"] is None)
-        cls.failed = run(cls.data, f"/a/{q(qa['identity'])}", 390, 900)
-        cls.docs = run(cls.data, f"/a/{q(ids['docs'])}", 390, 900)
+        cls.failed = run(cls.data, f"/a/{q(qa['identity'])}/status", 390, 900)
+        cls.docs = run(cls.data, f"/a/{q(ids['docs'])}/status", 390, 900)
         # Mark read from the list: open the agent from the overview (scrolled), mark read, expect to be back.
         cls.read_ok = run(cls.data, "/list", 390, 600, script=f"""
             window.scrollTo(0, 120); await new Promise(r => setTimeout(r, 100));
             location.hash = '#{cls.ui_route}'; await new Promise(r => setTimeout(r, 400));
             [...document.querySelectorAll('button')].find(b => b.textContent === 'Mark read').click();
-            await new Promise(r => setTimeout(r, 600)); document.body.dataset.scrollAfter = String(window.scrollY);""")
+            await new Promise(r => setTimeout(r, 1000)); document.body.dataset.scrollAfter = String(window.scrollY);""")
         failing = copy.deepcopy(cls.data)
         failing["ackFails"] = True
         cls.read_fail = run(failing, cls.ui_route, 390, 900, script="""
@@ -37,7 +38,7 @@ class SummaryCards(unittest.TestCase):
             await new Promise(r => setTimeout(r, 500));""")
         cls.graph_read = run(cls.data, f"/graph/{q(ids['ui'])}", 1280, 900, script="""
             [...document.querySelectorAll('button')].find(b => b.textContent === 'Mark read').click();
-            await new Promise(r => setTimeout(r, 500));""")
+            await new Promise(r => setTimeout(r, 1000));""")
 
     def main(self, page):
         return page["dom"].split('<main id="app"', 1)[1].split("</main>", 1)[0]
@@ -51,10 +52,10 @@ class SummaryCards(unittest.TestCase):
     def test_summary_comes_first_and_is_labelled(self):
         for width, page in self.ui.items():
             html = self.main(page)
-            self.assertLess(html.index("card summary"), html.index('class="more"'), "summary before the details")
-            self.assertNotIn('<details class="more" open', html, "details are folded")
+            self.assertIn('data-screen="status"', html)
+            # The dialog's own choices are answered in Needs you; the summary keeps the ask and why.
             for text in ("AI summary", "claude-sonnet-test · effort medium", "Run npm test in ./cart?",
-                         "<q>1. Yes</q>", "<q>2. Yes, and don't ask again for npm test</q>",
+                         "Why you: Running commands needs your approval",
                          "left out because the source does not contain them", "Summarize", "Summarize longer"):
                 self.assertIn(text, html, text)
             self.assertNotIn("Wipe the repo", html)

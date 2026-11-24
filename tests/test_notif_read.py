@@ -84,7 +84,7 @@ class ReadNotifications(unittest.TestCase):
         self.assertTrue(self.items([self.event()], gates=gate, now=90000)[0]['actionable'])
 
     def test_gate_tier_direct_ask_worker_and_quota(self):
-        gate = {1:{'decision':'send','title':'Server network setup needs your input','body':'Choose a network.'}}
+        gate = {1:{'decision':'send','title':'Robot network setup needs your input','body':'Choose a network.'}}
         item, = self.items([self.event()], gates=gate)
         self.assertEqual(item['tier'], 'waiting_on_you')
         self.assertTrue(item['actionable'])

@@ -94,7 +94,10 @@ def decorate(agents_out: list[dict], links: list[dict], agents: dict, now: float
             continue
         act, status = activity[agent["identity"]], agent.get("status")
         running = act.get("running")
-        busy = [w for w in workers.get(agent["identity"], []) if (by_id.get(w) or {}).get("status") == "working"]
+        # Present Herdr panes only: a closed worker keeps its last status, and an in-process
+        # subagent's "working" comes from hooks; both can be stale for days.
+        busy = [w for w in workers.get(agent["identity"], [])
+                if (by_id.get(w) or {}).get("status") == "working" and by_id[w].get("present") and not by_id[w].get("in_process")]
         found = None
         if status == "working" and running:
             age = now - running["since"]

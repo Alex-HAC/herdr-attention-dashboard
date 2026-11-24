@@ -1,3 +1,3 @@
 """Herdr attention dashboard: shows which Herdr agents need you."""
 
-__version__ = "0.9.10.1"
+__version__ = "0.9.11.1"

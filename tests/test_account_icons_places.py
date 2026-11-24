@@ -130,29 +130,31 @@ class Pages(unittest.TestCase):
         cls.data = icon_fixture()
         cls.ui, cls.api = agent(cls.data, "ui-builder")["identity"], agent(cls.data, "api-worker")["identity"]
 
-    def page(self, route, data=None):
-        return reading(run(data or self.data, route, 390, 844, script=PAGE))
+    def page(self, route, data=None, usage=False):
+        # Runs on lives on the Usage screen of the details view (details review 2026-11-24).
+        door = "await new Promise(r => setTimeout(r, 400)); document.querySelector('[data-door=usage]').click();" if usage else ""
+        return reading(run(data or self.data, route, 390, 844, script=door + PAGE))
 
     def test_inspector_runs_on_has_the_account_line_and_no_second_mark(self):
-        r = self.page(f"/g/{self.ui}")
+        r = self.page(f"/g/{self.ui}", usage=True)
         self.assertEqual(r["runs"]["account"], {"account": "codex", "text": False, "img": False, "name": "Codex Work"})
         self.assertFalse(r["runs"]["chip"])
         self.assertTrue(r["runs"]["source"].endswith("Account: recorded at launch."))
-        r = self.page(f"/g/{self.api}")
+        r = self.page(f"/g/{self.api}", usage=True)
         self.assertIsNone(r["runs"]["account"])
         self.assertFalse(r["runs"]["chip"])   # v0.9.7.4: no CC / CX chip; the service is named in words
         self.assertNotIn("Account", r["runs"]["source"])
 
     def test_agent_page_gets_runs_on_with_the_account(self):
-        r = self.page(f"/a/{self.ui}")
+        r = self.page(f"/a/{self.ui}/usage")
         self.assertEqual(r["runs"]["account"]["account"], "codex")
         self.assertLessEqual(r["scroll"], r["width"])
-        r = self.page(f"/a/{self.api}")
+        r = self.page(f"/a/{self.api}/usage")
         self.assertIsNotNone(r["runs"])
         self.assertIsNone(r["runs"]["account"])
 
     def test_text_only_account_shows_its_label_once_in_runs_on(self):
-        r = self.page(f"/a/{self.api}", with_icon(self.data, "api-worker", "copilot"))
+        r = self.page(f"/a/{self.api}/usage", with_icon(self.data, "api-worker", "copilot"))
         self.assertEqual(r["runs"]["account"], {"account": "copilot", "text": True, "img": False, "name": None})
 
     def test_workspace_cards_put_the_icon_in_the_avatar_corner_instead_of_the_kind(self):

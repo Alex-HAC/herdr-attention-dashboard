@@ -225,7 +225,7 @@ class Focus(unittest.TestCase):
                 # v0.9.8.4: no --class (a running Chromium ignores it; a starting one gives it to every window).
                 self.assertEqual(launch.call_args.args[0], ['omarchy-launch-webapp', 'http://127.0.0.1:9007/'])
 
-    def test_installer_is_idempotent_and_keeps_work_search(self):
+    def test_installer_is_idempotent_and_keeps_hac_search(self):
         with tempfile.TemporaryDirectory() as tmp, patch('herdr_attention.desktop_install.subprocess.run', side_effect=FileNotFoundError()), \
              patch('herdr_attention.config.load_file', return_value={}):
             base = Path(tmp); bindings = base/'bindings.lua'

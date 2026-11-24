@@ -121,6 +121,7 @@ class TypingSurvivesRefresh(unittest.TestCase):
         identity = urllib.parse.quote(data["ids"]["ui"], safe="")
         r = reading(run(data, "/g/" + identity, 412, 915, script=POLL + """
           await loadDetail(FIXTURE.ids.ui);
+          document.querySelector('[data-door=links]').click();   // the relations editor is on Links
           const sheet = graph.shell.sheetBody.firstChild;
           const editor = sheet.querySelector('details.editor'); editor.open = true;
           const input = editor.querySelector('input[aria-label="Team"]');
@@ -151,6 +152,7 @@ class TypingSurvivesRefresh(unittest.TestCase):
         identity=urllib.parse.quote(data["ids"]["ui"],safe="")
         r=reading(run(data,"/g/"+identity,412,915,script=POLL+"""
           await loadDetail(FIXTURE.ids.ui);
+          document.querySelector('[data-door=links]').click();
           const sheet=graph.shell.sheet, root=graph.shell.sheetBody.firstChild;
           const editor=root.querySelector('details.editor');editor.open=true;
           const field=editor.querySelector('input[aria-label="Team"]');
@@ -159,10 +161,10 @@ class TypingSurvivesRefresh(unittest.TestCase):
           await poll();render(true);
           const focused=document.activeElement===field && field.selectionStart===1 && field.selectionEnd===4;
           field.blur();await wait(100);await poll();
-          document.body.dataset.reading=JSON.stringify({focused,
-            same:root===graph.shell.sheetBody.firstChild && root.contains(field),
-            open:!sheet.hidden && editor.open, draft:field.value,
-            gone:root.textContent.includes('This agent is no longer running')});
+          const same=root===graph.shell.sheetBody.firstChild && root.contains(field), open=!sheet.hidden && editor.open, draft=field.value;
+          document.querySelector('.screen-back').click();   // the gone banner is on the status card
+          document.body.dataset.reading=JSON.stringify({focused, same, open, draft,
+            gone:graph.shell.sheetBody.textContent.includes('No longer running')});
         """))
         for key in ("focused","same","open","gone"):
             self.assertTrue(r[key],key)

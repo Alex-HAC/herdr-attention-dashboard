@@ -67,7 +67,8 @@ class WatchedQuestionsUi(unittest.TestCase):
 
     def test_report_shows_updated_time_stale_and_refresh_progress_while_draft_stays(self):
         data=fixture()
-        r=reading(run(data,'/a/'+quote(data['root'],safe='')+'/report',390,844,script="""
+        # Wide page: the Status screen (report) beside the main view with its Needs you block.
+        r=reading(run(data,'/a/'+quote(data['root'],safe='')+'/report',1280,900,script="""
           const report=document.querySelector('.coordinator-report');
           const text=report.textContent;
           const input=document.querySelector('.watched-questions input');input.focus();input.value='half an answer';input.dispatchEvent(new Event('input'));input.setSelectionRange(1,5);
@@ -88,6 +89,6 @@ class WatchedQuestionsUi(unittest.TestCase):
         root=next(a for a in data['view']['agents'] if a['identity']==data['root']);root.update(tier=None,state='working',question=None)
         r=reading(run(data,'/a/'+quote(data['root'],safe=''),390,844,script="""
           const root=agentById(FIXTURE.root);
-          document.body.dataset.reading=JSON.stringify({tier:agentTier(root),red:document.querySelector('.detail-head .avatar').classList.contains('s-needs_you')});
+          document.body.dataset.reading=JSON.stringify({tier:agentTier(root),red:document.querySelector('.status-card .avatar').classList.contains('s-needs_you')});
         """))
         self.assertIsNone(r['tier']);self.assertFalse(r['red'])

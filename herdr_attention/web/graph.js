@@ -67,7 +67,8 @@ function tokens(n) {
   if (n === null || n === undefined) return "?";
   if (n < 1000) return `${n}`;
   if (n < 1e6) return `${(n / 1000).toFixed(n < 1e4 ? 1 : 0)}k`;
-  return `${(n / 1e6).toFixed(n < 1e7 ? 2 : 1)}M`;
+  if (n < 1e9) return `${(n / 1e6).toFixed(n < 1e7 ? 2 : 1)}M`;
+  return `${(n / 1e9).toFixed(n < 1e10 ? 2 : 1)}B`;   // 1141.7M reads as 1.14B
 }
 
 function hours(seconds) {
@@ -1148,6 +1149,7 @@ function stableKey(a) {
 function updateSheet(view, force) {
   const shell = graph.shell;
   const agent = graph.selected ? view.agents.find((a) => a.identity === graph.selected) : null;
+  if (app.sheetScreen && app.sheetScreen.identity !== agent?.identity) app.sheetScreen = null;
   if (!agent && !graph.panel) { shell.sheet.hidden = true; graph.inspectorKey = ""; graph.panelKey = ""; return; }
   const wasHidden = shell.sheet.hidden;
   shell.sheet.hidden = false;
@@ -1156,7 +1158,7 @@ function updateSheet(view, force) {
   let key, title, build;
   if (agent) {
     const detail = app.details[agent.identity];
-    key = `a:${agent.identity}:${stableKey(agent)}:${detail ? detail.generated_at : ""}:${JSON.stringify(graph.conversation[agent.identity] || "")}:${JSON.stringify(app.outputs[agent.identity] || "")}:${app.ackErrors[agent.identity] || ""}`;
+    key = `a:${agent.identity}:${app.sheetScreen?.screen || ""}:${stableKey(agent)}:${detail ? detail.generated_at : ""}:${JSON.stringify(graph.conversation[agent.identity] || "")}:${JSON.stringify(app.outputs[agent.identity] || "")}:${app.ackErrors[agent.identity] || ""}`;
     title = [agent.workspace_label, agent.tab_label].filter(Boolean).join(" › ");
     build = () => inspector(agent);
   } else {
@@ -1309,71 +1311,7 @@ function renderGraph() {
   // Kept for the list-world agent page's "Show in graph" and old links.
   return buildGraphShell();
 }
-// ---------------------------------------------------------------- inspector
-
-function freshness(m) {
-  const bits = [];
-  if (m.as_of) bits.push(`as of ${clock(m.as_of)}`);
-  return bits.join(" · ");
-}
-
-function metricRow(label, m, format) {
-  if (!m || !m.available) {
-    return h("div", { class: "metric" }, h("div", { class: "metric-label", text: label }),
-      h("div", { class: "metric-value" }, unknown("unavailable")),
-      h("div", { class: "metric-meta", text: m && m.reason ? m.reason : "no data" }));
-  }
-  return h("div", { class: "metric" },
-    h("div", { class: "metric-label" }, label, h("span", { class: `exact ${m.exact ? "yes" : "no"}`, text: m.exact ? "exact" : (m.kind || "estimate") })),
-    h("div", { class: "metric-value", text: format(m) }),
-    h("div", { class: "metric-meta", text: [m.source, freshness(m)].filter(Boolean).join(" · ") }),
-    m.note ? h("div", { class: "metric-meta", text: m.note }) : null);
-}
-
-function metricsCard(agent) {
-  const m = agent.metrics || {};
-  const t = m.trace || {};
-  return h("section", { class: "card metrics", "data-reading-key": "metrics" },
-    metricRow("Context", m.context, (x) => `${tokens(x.value)} tokens${x.window ? ` of ${tokens(x.window)} (${x.percent}%)` : ""}${x.compactions ? ` · compacted ${x.compactions}×` : ""}`),
-    metricRow("Tokens this session", m.tokens, (x) => `${tokens(x.value)} total · in ${tokens(x.parts.input)} · cache read ${tokens(x.parts.cache_read)} · cache write ${tokens(x.parts.cache_write)} · out ${tokens(x.parts.output)}${x.parts.reasoning !== undefined ? ` (reasoning ${tokens(x.parts.reasoning)})` : ""}`),
-    metricRow("Age", m.age, (x) => `${x.exact ? "" : "≥ "}${hours(x.value)} (since ${clock(x.since)})`),
-    metricRow("Active", m.active, (x) => `${x.exact ? "" : "≥ "}${hours(x.value)} working`),
-    h("p", { class: "note", text: t.available
-      ? `Trace ${t.file || ""}${t.caught_up === false ? `, reading ${t.read_percent}%` : ""}; last entry ${clock(t.last_entry_at)}, read ${t.read_at ? ago(t.read_at) + " ago" : "?"}.${m.model ? ` Model: ${m.model}.` : ""} Tokens are not money; no prices shown.`
-      : `No trace: ${t.reason || "unknown"}.` }));
-}
-
-function connectionsCard(agent, view) {
-  const byId = Object.fromEntries(view.agents.map((a) => [a.identity, a]));
-  const links = (view.links || []).filter((l) => l.from === agent.identity || l.to === agent.identity);
-  const verb = (l, outgoing) => ({
-    spawned_by: outgoing ? "spawned by" : "spawned", forked_from: outgoing ? "forked from" : "forked into",
-    reports_to: outgoing ? "reports to" : "coordinates",
-  }[l.kind] || l.kind);
-  const roles = agent.roles || { role: [], team: [], task: [] };
-  const label = (items) => items.length
-    ? items.map((r) => `${r.value} (${r.provenance}, ${clock(r.since)})`).join(", ") : null;
-  return h("section", { class: "card", "data-reading-key": "connections" },
-    h("dl", { class: "facts" },
-      h("dt", { text: "Workspace" }), h("dd", { text: agent.workspace_label }),
-      h("dt", { text: "Tab" }), h("dd", {}, agent.tab_label || unknown()),
-      h("dt", { text: "Role" }), h("dd", {}, label(roles.role) || unknown("not declared")),
-      h("dt", { text: "Team" }), h("dd", {}, label(roles.team) || unknown("not declared")),
-      h("dt", { text: "Task" }), h("dd", {}, label(roles.task) || unknown("not declared")),
-      h("dt", { text: "Links" }), h("dd", {}, links.length ? h("ul", { class: "plain" }, links.map((l) => {
-        const outgoing = l.from === agent.identity;
-        const other = outgoing ? l.to : l.from;
-        const otherHidden = outgoing ? l.hidden : l.from_hidden;
-        const otherAgent = byId[other];
-        const name = otherHidden ? h("span", { class: "unknown-val", text: l.label || "hidden or unknown agent" })
-          : otherAgent ? h("a", { class: "chip", href: hashLink('graph', other) },
-              h("i", { class: `dot state s-${otherAgent.state}` }), displayName(otherAgent)) : unknown();
-        const cross = otherAgent && otherAgent.workspace_id !== agent.workspace_id ? ` (in ${otherAgent.workspace_label})` : "";
-        return h("li", {}, `${verb(l, outgoing)} `, name, cross,
-          l.cycle ? h("span", { class: "warn", text: " · part of a reporting cycle" }) : null,
-          h("div", { class: "metric-meta", text: `${(l.provenance || []).join(" + ")} · ${l.source}${l.inferred ? ` · confidence ${Math.round(l.confidence * 100)}%` : ""}${l.since ? ` · since ${clock(l.since)}` : ""}` }));
-      })) : unknown("none known; no declaration or specific reporting evidence"))));
-}
+// ---------------------------------------------------------------- agent sheet parts
 
 // Manual declarations (login + CSRF; recorded with provenance "manual").
 async function relate(body) {
@@ -1509,40 +1447,4 @@ function runsOn(agent) {
       { source: icon.source?.label || UI.account_icons.labels.source_launch }) : ""].filter(Boolean).join(" ") }));
 }
 
-function inspector(agent) {
-  const detail = app.details[agent.identity];
-  if (!detail || (now() - (detail.generated_at || 0)) * 1000 > DETAIL_MS) loadDetailSoon(agent.identity);
-  return h("div", { class: "inspector-body", "data-reading-key": `inspector:${agent.identity}` },
-    h("section", { class: "card" },
-      h("div", { class: "detail-head inspector-head" },
-        h("div", { class: `avatar s-${agent.state}` }, initials(agent), avatarCorner(agent)),
-        h("h2", { class: "inspector-name", text: displayName(agent) }),
-        watchCloselyButton(agent)),
-      h("div", { class: "agent-meta" },
-        h("span", { class: `pill state s-${agent.state}`, text: NEEDS.includes(agent.kind) ? agent.label : agent.state_label }),
-        h("span", { class: "tag", text: agent.workspace_label }),
-        agent.tab_label ? h("span", { class: "tag", text: agent.tab_label }) : null,
-        h("span", { text: `since ${since(agent)}` })),
-      runsOn(agent),
-      h("p", { class: "muted small herdr-raw", text: `Herdr status: ${herdrStatus(agent)}` }),
-      agent.title ? h("p", { class: "task", text: agent.title }) : h("p", { class: "task" }, unknown("no task title reported")),
-      h("div", { class: "actions" }, h("a", { class: "btn", href: hashLink('agent', agent.identity), text: "Full page" }), typeof terminalButton === "function" ? terminalButton(agent) : null, typeof replyButton === "function" ? replyButton(agent) : null, openInHerdrButton(agent))),
-    !agent.present ? h("p", { class: "note", "data-reading-key": "gone", text: "This agent is no longer running. Showing its last known details." }) : null,
-    agent.quota_wall ? h("p", { class: "note", "data-reading-key": "quota-wall", text: `${agent.quota_wall.provider} quota-walled until ${agent.quota_wall.until ? clock(agent.quota_wall.until) : "cleared"}. Routing skips this provider; no automatic restart.` }) : null,
-    agent.launch?.sandbox ? h("p", { class: "note", "data-reading-key": "sandbox", text: `Sandbox: ${agent.launch.sandbox}` }) : null,
-    replySlot(`agent:${agent.identity}`,agent),
-    watchedQuestions(agent),
-    summaryCard(agent, detail),
-    coordinatorReport(agent),
-    h("h2", { class: "section", text: "Why this state" }),
-    h("section", { class: "card" }, h("blockquote", { class: "evidence-quote" },
-      h("ul", { class: "evidence" }, evidenceLines(agent).map((line) => evidenceItem(line, agent))))),
-    h("h2", { class: "section", text: "Metrics" }), metricsCard(agent),
-    h("h2", { class: "section", text: "Connections" }), connectionsCard(agent, app.view), relationsEditor(agent, app.view),
-    h("h2", { class: "section", text: "Relationship history" }), h("section", { class: "card" }, relationHistory(detail)),
-    h("h2", { class: "section", text: "Recent history" }),
-    h("section", { class: "card" }, detail?.activity?.length
-      ? timeline(detail.activity, 6)
-      : h("p", { class: "muted small", text: detail ? "Nothing recorded yet." : "Loading…" })),
-    h("h2", { class: "section", text: "Conversation and terminal" }), conversationCard(agent));
-}
+// The agent sheet itself (inspector) is drawn by details.js, the same component as the agent page.

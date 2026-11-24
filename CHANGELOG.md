@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.9.11.1 (24 Nov 2026)
+
+The Visuals hub was showing blank tiles for some images; opening one still showed the full picture (Alex 14:46).
+
+- Cached previews are accepted only if they look like a real JPEG or WebP. Short or bogus files (including leftover `jpeg-thumb-bytes` stubs from tests that wrote into the live cache) are deleted and remade.
+- If ffmpeg cannot make a preview, the tile **falls back to the original image** instead of a 1×1 placeholder that looks blank. Fallbacks are cached for a minute so a later preview can still replace them. Real 320 px thumbs keep the long cache and ETag.
+- The thumbnail URL and ETag include a generation stamp so a phone that cached a bad preview will refetch. The hub also falls back to the full image if the preview request itself fails.
+
+
+## 0.9.11.0 (24 Nov 2026)
+
+The view you get when you click an agent was an information dump (one coordinator sheet was about 8 desktop screens). It is now calm and in three levels, the same in the graph sheet and on the agent page.
+
+- **One component** (`web/details.js`) draws the graph sheet and the agent page; the old `inspector()` and `renderAgent()` bodies are gone.
+- **Status card** first: state stripe and pill with the time in that state, task title, the last thing it said, and one row of chips (account, model with effort dots, context % when the window is known, folder, sandbox only when sandboxed), "reports to" when it reports to someone. Gone and out-of-quota (with the reset time) are a one-line banner. Watch closely is an eye toggle; its explanation is the tooltip.
+- **Needs you** only when something is open: the terminal dialog (tap a choice, then Send), each open question once (quote and context only when they add words, the route only when the answer goes to another agent), "may want something" with Reply and Nothing needed, finished (Mark read), stall or failure, out of quota (Got it). A sent answer folds to a tick line and the count goes down; a failed send keeps the row and the draft; a check fills only after the server confirmed. Older answers are under Activity › Your answers.
+- **One action bar** (Reply, Terminal, Open in Herdr, Page or Graph) and **four doors** with a live value: Status (coordinator team bar and the report in coloured blocks, one Nudge for all stuck workers; the AI summary in blocks; Why this state folded), Activity (24-hour state ribbon, one timeline with All · Finished · Alerts, Your answers, messages and terminal lines), Usage (runs on with its source, context bar, stacked token bar, age and active with a ratio bar, "How this is measured" folded), Links (each agent once, live workers as chips, gone ones folded behind a count, declared roles only, the editor and history folded).
+- New page routes `#/a/<id>/status`, `/activity`, `/usage`, `/links` (UI contract). Old links still land: `/conversation` and `/output` open Activity and load that part, `/report` opens Status, `/terminal` the terminal sheet. Escape on a screen goes back; another node opens on the main screen.
+- **Button vocabulary** used app-wide: filled accent only for the one thing to do, a round check for check-offs, a chat icon on Reply, ↗ on Open in Herdr, a spark and magenta tint on token-costing AI buttons, an icon toggle for Watch closely.
+- Uses the 0.9.10.0 data: what a quiet agent waits for is one line under the state pill, in its graph ring colour; Links shows each line's last message and when the coordinator waits for a worker; Why this state says why the same screen is expected. Status report has the AI look; the team status is a pill on the report line; token bar segments have distinct tints; check rows stack under 480 px; large token counts read 1.14B.
+- List rows: a reason every row of a group shares is said once under the heading; Summarize, Terminal and Open in Herdr are one line of small icon buttons. Workspace agent cards no longer run past the right edge at 390 px. Question routes name agents by their display name, not the task title.
+
+## 0.9.10.3 (24 Nov 2026)
+
+- "Waiting for a worker" ignores workers that have closed: a closed pane keeps its last status ("working"), which made one idle coordinator wait for 48 workers.
+
+## 0.9.10.2 (24 Nov 2026)
+
+- "Waiting for a worker" counts Herdr pane workers only. In-process subagents report "working" through hooks, which can stay stale for days; they made an idle coordinator look as if it waited for 48 workers.
+
 ## 0.9.10.1 (24 Nov 2026)
 
 - In-process subagents no longer copy their parent's waiting state (they share its transcript).
@@ -51,7 +81,7 @@ Global visuals: new images, videos, and gifs from any watched agent appear app-w
 
 Latest visuals was showing the same screenshot twice (Alex 22:20: "The herdr dashboard shows latest visuals twice for some reason").
 
-- The List and team galleries listed the same file twice when two agents had copies of one tree (for example `ui/web-app` and `app-base/web-app`, both `docs/images/chart-129/colouring-narrow-fixture.png`, same bytes and size, different full paths). Discovery keys items by the full path, so each copy got its own media id. **Copies that share a repo-relative path and size are now shown once**, keeping the newest reference. Files with the same name at a different path or a different size stay separate (the setup and onboarding `ready-720.png` pair is kept).
+- The List and team galleries listed the same file twice when two agents had copies of one tree (for example `ui/web-app` and `app-base/web-app`, both `docs/images/robot-129/colouring-narrow-fixture.png`, same bytes and size, different full paths). Discovery keys items by the full path, so each copy got its own media id. **Copies that share a repo-relative path and size are now shown once**, keeping the newest reference. Files with the same name at a different path or a different size stay separate (the setup and onboarding `ready-720.png` pair is kept).
 - On a coordinator's page, **Latest visuals appeared twice as a heading**: once inside the coordinator status report (the team strip) and again as the agent's own strip just below, often empty after the folder cap. The agent strip is no longer added when the team strip is already there.
 
 ## 0.9.8.10 (22 Nov 2026)

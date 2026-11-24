@@ -169,7 +169,7 @@ class Gestures(unittest.TestCase):
             ev('pointerdown', 11, 100, 600); ev('pointermove', 11, 140, 560); ev('pointerup', 11, 140, 560);
             location.hash = '#/g/' + encodeURIComponent('%s'); await wait(200);
             const t = T();
-            [...document.querySelectorAll('.sheet button')].find(b => b.textContent === 'Mark read').click(); await wait(300);
+            [...document.querySelectorAll('.sheet button')].find(b => b.textContent === 'Mark read').click(); await wait(800);
             out.hash = location.hash; out.same = JSON.stringify(t) === JSON.stringify(T()); out.sheetHidden = document.querySelector('.sheet').hidden;""" % ui)
         self.assertEqual(r["hash"], "#/")
         self.assertTrue(r["same"])

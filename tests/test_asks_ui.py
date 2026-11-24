@@ -220,22 +220,22 @@ class QuestionRows(unittest.TestCase):
 PAGES_SCRIPT = ANSWER_STUB + """
 const out = {};
 const text = () => document.querySelector("main").textContent;
-// Agent page: the rows replace "Open the agent and decide"; no "none yet" placeholder.
+// Agent page: the open rows are in Needs you; no "Open the agent and decide", no "none yet" placeholder.
 location.hash = hashLink("agent", %(lead)s); await wait(400); render(true);
-out.agentRows = document.querySelectorAll("main .summary .ask-item").length;
+out.agentRows = document.querySelectorAll("main .needs-block .ask-item").length;
 out.agentDeadEnd = /Open the agent and decide/.test(text());
 out.agentNoneYet = /none yet/.test(text());
 out.agentReply = document.querySelector("main .reply-delivery")?.textContent || null;
 // A report with no question.
 location.hash = hashLink("agent", %(none)s); await wait(400); render(true);
-out.doneState = document.querySelector("main .asks-none .asks-state")?.textContent;
-out.doneSummary = document.querySelector("main .asks-none > .md")?.textContent;
-out.doneCode = [...document.querySelectorAll("main .asks-none > .md code")].map((c) => c.textContent);
-out.donePills = [...document.querySelectorAll("main .detail-pills .pill")].map((p) => p.className);
+out.doneState = document.querySelector("main .status-card .pill")?.textContent;
+out.doneSummary = document.querySelector("main .status-card .sc-now")?.textContent;
+out.doneCode = [...document.querySelectorAll("main .status-card .sc-now code")].map((c) => c.textContent);
+out.donePills = [...document.querySelectorAll("main .status-card .pill")].map((p) => p.className);
 // A long "maybe" message is cut at a word boundary, with More.
 location.hash = hashLink("agent", %(maybe)s); await wait(400); render(true);
-const maybe = () => document.querySelector("main .asks-maybe .md");
-out.maybeState = document.querySelector("main .asks-maybe .asks-state")?.textContent;
+const maybe = () => document.querySelector("main .maybe-row .md");
+out.maybeState = document.querySelector("main .maybe-row .ask-text")?.textContent;
 out.maybeCut = maybe().querySelector("p").textContent;
 out.maybeMore = maybe().querySelector(".md-more")?.textContent;
 maybe().querySelector(".md-more").click(); await wait(50);
@@ -273,7 +273,7 @@ class OtherSurfaces(unittest.TestCase):
         cls.data, cls.probe = page(PAGES_SCRIPT, data=data)
 
     def test_agent_page_has_rows_and_no_dead_end(self):
-        self.assertEqual(self.probe["agentRows"], 4, self.probe)
+        self.assertEqual(self.probe["agentRows"], 3, "the answered one is under Activity › Your answers")
         self.assertFalse(self.probe["agentDeadEnd"])
         self.assertFalse(self.probe["agentNoneYet"])
         self.assertRegex(self.probe["agentReply"], r"^You replied “yes” at \d")

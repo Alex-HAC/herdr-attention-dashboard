@@ -12,7 +12,7 @@ laptop can set that header itself.
   The login still applies on top.
 
 Entries are tailnet IPs (100.x, fd7a:115c:a1e0::/48) or device names (MagicDNS name such as
-``pixel-10a`` or ``pixel-10a.tail1234.ts.net``, or the host name). Names are resolved from
+``phone`` or ``phone.tail1234.ts.net``, or the host name). Names are resolved from
 ``tailscale status --json``, refreshed every minute; a name that does not resolve allows nothing.
 
 The list and the peer list are only shown and changed on the laptop itself (the Unix socket and

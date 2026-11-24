@@ -97,6 +97,7 @@ def build_page(directory: Path, fixture: dict, script: str | None = None) -> Pat
     html = html.replace('href="style.css"', f'href="{(WEB / "style.css").as_uri()}"')
     html = html.replace('<script src="graph.js"></script>', f'<script src="{(WEB / "graph.js").as_uri()}"></script>')
     html = html.replace('<script src="terminal.js"></script>', f'<script src="{(WEB / "terminal.js").as_uri()}"></script>')
+    html = html.replace('<script src="details.js"></script>', f'<script src="{(WEB / "details.js").as_uri()}"></script>')
     html = html.replace(
         '<script src="app.js"></script>',
         f"<script>const FIXTURE = {json.dumps(fixture)};{STUB}</script>"

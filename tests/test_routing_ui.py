@@ -29,10 +29,10 @@ class RoutingCards(unittest.TestCase):
         identity = self.data['ids']['ui']
         for width in (390, 1280):
             page = run(self.data, '/g/' + urllib.parse.quote(identity, safe=''), width, 844)
-            self.assertIn('codex quota-walled', page['dom'])
+            self.assertIn('Out of quota (codex)', page['dom'])
             self.assertIn('Sandbox: fixture test', page['dom'])
             self.assertIn('data-id="' + self.child + '"', page['dom'])
             self.assertEqual(page['probe']['overflowing'], [])
         page = run(self.data, '/g/' + urllib.parse.quote(self.child, safe=''), 390, 844)
-        self.assertIn('class="task">In-process subagent', page['dom'])
+        self.assertIn('class="sc-task">In-process subagent', page['dom'])
         self.assertEqual(page['probe']['overflowing'], [])

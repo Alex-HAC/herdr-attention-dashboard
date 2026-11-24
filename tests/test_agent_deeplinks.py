@@ -1,4 +1,5 @@
-"""#/a/<identity>/conversation and /output open Details at that section (v0.8.2 slice C)."""
+"""#/a/<identity>/conversation and /output open the Activity screen of the details view and load that
+part once (v0.8.2 slice C; screens since the details review 2026-11-24)."""
 
 import json
 import unittest
@@ -9,10 +10,10 @@ from tests.web_harness import BROWSER, run
 
 SCRIPT = """
 await new Promise((ok) => setTimeout(ok, 500));
-const more = document.querySelector('details.more');
+const screen = document.querySelector('.details-screen');
 const target = document.getElementById('agent-conversation');
 document.body.dataset.reading = JSON.stringify({
-  open: !!(more && more.open),
+  open: !!screen && screen.dataset.screen === 'activity',
   top: target ? Math.round(target.getBoundingClientRect().top) : null,
   scrollY: Math.round(window.scrollY),
   calls: window.__calls.map((c) => c[0].split('?')[0]),
@@ -33,11 +34,10 @@ class AgentDeepLinks(unittest.TestCase):
         lead = next(a for a in cls.data["view"]["agents"] if a["name"] == "web-lead")
         cls.base = "/a/" + urllib.parse.quote(lead["identity"], safe="")
 
-    def test_conversation_link_opens_details_scrolled_and_loads_messages(self):
+    def test_conversation_link_opens_activity_and_loads_messages(self):
         r = reading(run(self.data, self.base + "/conversation", 390, 844, script=SCRIPT))
         self.assertTrue(r["open"])
-        self.assertGreater(r["scrollY"], 100)
-        self.assertLess(abs(r["top"]), 120, "section is at the top of the screen")
+        self.assertIsNotNone(r["top"], "the Messages part is on that screen")
         self.assertIn("/api/conversation", r["calls"])
         self.assertNotIn("/api/output", r["calls"])
 

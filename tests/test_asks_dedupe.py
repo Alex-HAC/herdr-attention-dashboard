@@ -15,7 +15,7 @@ HANDOVER = """The work coordinator has the job and is running.
 1. **Don't lose the demo fixes.** Reconcile the patch records with the drafts and port what is missing.
 2. **Prepare placement:** check read-only what's installed on the rig, fix the findings that block policy loading, and prepare one sealed install for you to choose from, with every option off by default.
 3. **When the new model arrives:** check its contract first. Is it the same family as XW-GC, and what inputs does it need, such as the target pose? Then tell you what it needs.
-4. No server contact beyond named read-only files until you give a go.
+4. No robot contact beyond named read-only files until you give a go.
 
 **I'm stopping here.** Talk to the work coordinator directly from now on."""
 

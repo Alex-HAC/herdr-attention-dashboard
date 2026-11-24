@@ -8,7 +8,7 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from herdr_attention.visuals import Visuals, open_beneath, collapse_identical
+from herdr_attention.visuals import Visuals, open_beneath, collapse_identical, placeholder_jpeg_bytes, is_valid_thumbnail
 from tests.helpers import settings
 from tests.test_api import make_collector, PASSPHRASE
 from herdr_attention.api import PhoneServer,make_handler,serve
@@ -74,17 +74,47 @@ class Detection(unittest.TestCase):
 
     def test_cached_thumbnail_uses_checked_descriptor_and_no_network(self):
         (self.root/'screen.png').write_text('fixture');item,=self.library.discover(self.view)
+        preview=placeholder_jpeg_bytes()
         def ffmpeg(command,**kwargs):
             self.assertIn('file,pipe',command);self.assertTrue(kwargs['pass_fds'])
-            Path(command[-1]).write_bytes(b'jpeg thumb')
+            Path(command[-1]).write_bytes(preview)
             return SimpleNamespace(returncode=0)
         with patch('herdr_attention.visuals.subprocess.run',side_effect=ffmpeg) as runner:
             for _ in range(2):
                 file,mime,size=self.library.read(self.view,item['id'],True)
-                with file:self.assertEqual(file.read(),b'jpeg thumb')
-                self.assertIn(mime,('image/jpeg','image/webp'));self.assertEqual(size,10)
+                with file:self.assertEqual(file.read(),preview)
+                self.assertIn(mime,('image/jpeg','image/webp'));self.assertEqual(size,len(preview))
         self.assertEqual(runner.call_count,1)
         self.assertIn('scale=320:320:force_original_aspect_ratio=decrease',runner.call_args[0][0])
+
+    def test_invalid_cached_thumbnail_is_regenerated(self):
+        (self.root/'screen.png').write_bytes(b'\x89PNG\r\n\x1a\n'+b'not-a-real-png-but-source')
+        item,=self.library.discover(self.view)
+        mtime=int((self.root/'screen.png').stat().st_mtime_ns)
+        junk=self.library.cache/f"{item['id']}-{mtime}.webp"
+        junk.parent.mkdir(parents=True, exist_ok=True)
+        junk.write_bytes(b'jpeg-thumb-bytes')
+        self.assertFalse(is_valid_thumbnail(junk))
+        preview=placeholder_jpeg_bytes()
+        def ffmpeg(command,**kwargs):
+            Path(command[-1]).write_bytes(preview)
+            return SimpleNamespace(returncode=0)
+        with patch('herdr_attention.visuals.subprocess.run',side_effect=ffmpeg) as runner:
+            file,mime,size=self.library.read(self.view,item['id'],True)
+            with file:self.assertEqual(file.read(),preview)
+        self.assertEqual(runner.call_count,1)
+        self.assertTrue(is_valid_thumbnail(self.library.cache/f"{item['id']}-{mtime}.webp") or
+                        is_valid_thumbnail(self.library.cache/f"{item['id']}-{mtime}.jpg"))
+
+    def test_failed_thumb_falls_back_to_the_original_image(self):
+        payload=b'\x89PNG\r\n\x1a\n'+b'original-image-bytes'
+        (self.root/'screen.png').write_bytes(payload)
+        item,=self.library.discover(self.view)
+        with patch('herdr_attention.visuals.subprocess.run',return_value=SimpleNamespace(returncode=1)):
+            file,mime,size=self.library.read(self.view,item['id'],True)
+            with file:self.assertEqual(file.read(),payload)
+        self.assertEqual(mime,'image/png')
+        self.assertEqual(size,len(payload))
 
     def test_identical_copies_in_two_roots_are_shown_once(self):
         other=Path(self.tmp.name)/'work2';other.mkdir()
@@ -154,7 +184,7 @@ class MediaAuth(unittest.TestCase):
         f=page_fixture();identity=f['view']['agents'][0]['identity']
         f['visuals']={'desktop':True,'items':[{'id':'a'*32,'name':'screen.svg','path':'/work/screen.svg','relative_path':'screen.svg',
           'identity':identity,'agent':'builder','at':100,'video':False,'source':'trace','url':'data:image/svg+xml,<svg/>','thumbnail':'data:image/svg+xml,<svg/>'}]}
-        result=reading(run(f,'/a/'+identity,412,915,script="""
+        result=reading(run(f,'/a/'+identity+'/activity',412,915,script="""
           const before=window.__calls.filter(c=>c[0].startsWith('/api/visuals')).length;
           document.querySelector('.latest-visuals').open=true;await new Promise(r=>setTimeout(r,300));
           document.querySelector('.visual-tile').click();
@@ -171,7 +201,7 @@ class MediaAuth(unittest.TestCase):
     @unittest.skipUnless(BROWSER,'no Chromium')
     def test_coordinator_page_renders_one_latest_visuals_strip(self):
         f=page_fixture();agent=f['view']['agents'][0];agent['is_coordinator']=True
-        result=reading(run(f,'/a/'+agent['identity'],390,900,script="""
+        result=reading(run(f,'/a/'+agent['identity']+'/status',390,900,script="""
           document.body.dataset.reading=JSON.stringify({
             strips:document.querySelectorAll('.latest-visuals').length,
             keys:[...document.querySelectorAll('.latest-visuals')].map((s)=>s.getAttribute('data-reading-key'))
@@ -180,7 +210,7 @@ class MediaAuth(unittest.TestCase):
         self.assertEqual(result['strips'],1)
         self.assertEqual(result['keys'],[f"visuals:team:{agent['identity']}"])
         worker=page_fixture();wid=worker['view']['agents'][0]['identity']
-        plain=reading(run(worker,'/a/'+wid,390,900,script="""
+        plain=reading(run(worker,'/a/'+wid+'/activity',390,900,script="""
           document.body.dataset.reading=JSON.stringify({
             strips:document.querySelectorAll('.latest-visuals').length,
             keys:[...document.querySelectorAll('.latest-visuals')].map((s)=>s.getAttribute('data-reading-key'))

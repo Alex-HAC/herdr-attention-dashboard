@@ -5,7 +5,7 @@ import unittest
 
 from herdr_attention.tailnet_access import TailnetAccess
 from herdr_attention.terminal import TerminalReader, clean_ansi, plain, redact_ansi
-from tests.test_tailnet_access import NAS, PHONE, STATUS, Servers as _Servers
+from tests.test_tailnet_access import SERVER, PHONE, STATUS, Servers as _Servers
 
 E = "\x1b["
 
@@ -85,9 +85,9 @@ class Endpoint(_Servers):
         self.assertNotIn("screen", json.loads(raw))
 
     def test_the_allow_list_applies_to_the_terminal(self):
-        self.assertEqual(self.desk("POST", {"entries": ["pixel-10a"], "enabled": True})[0], 200)
+        self.assertEqual(self.desk("POST", {"entries": ["phone"], "enabled": True})[0], 200)
         cookie, _ = self.login(PHONE)
-        status, raw = self.get(self.phone, f"/api/terminal?identity={self.ident()}", {"X-Forwarded-For": NAS, "Cookie": cookie})
+        status, raw = self.get(self.phone, f"/api/terminal?identity={self.ident()}", {"X-Forwarded-For": SERVER, "Cookie": cookie})
         self.assertEqual((status, raw), (403, b"forbidden\n"))
 
     def test_unwatched_and_unknown_agents_are_404_and_never_read(self):

@@ -35,8 +35,9 @@ class DesktopWindowUi(unittest.TestCase):
         for route in self.routes():
             with self.subTest(route=route):
                 page = run(self.fixture(True), route, width=1280)
-                # The compact notification row shows it as a quiet button (v0.9.4).
-                self.assertRegex(page['dom'], r'class="btn open-in-herdr( quiet)?"', route)
+                # The compact notification row shows it as a quiet button (v0.9.4); a List row as a
+                # quiet icon button (details review 2026-11-24).
+                self.assertRegex(page['dom'], r'class="btn open-in-herdr( quiet)?( icon-only)?"', route)
                 self.assertEqual(page['probe']['title'], 'Herdr overview')
                 self.assertFalse(any(path == '/api/focus' for path, _ in page['probe']['calls']))
 

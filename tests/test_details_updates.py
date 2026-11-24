@@ -38,22 +38,26 @@ class DetailsUpdates(unittest.TestCase):
         identity = self.data['ids']['ui']
         for width in (390, 1280):
             with self.subTest(width=width):
-                page = run(self.data, '/a/'+urllib.parse.quote(identity, safe=''), width, 700, script="""
+                # The Status screen of the details view, its "Why this state" fold open.
+                page = run(self.data, '/a/'+urllib.parse.quote(identity, safe='')+'/status', width, 400, script="""
                     const id = FIXTURE.ids.ui;
                     await loadDetail(id);
                     const root = document.querySelector('#app > div');
-                    const more = document.querySelector('details.more'); more.open = true;
-                    window.scrollTo(0, 450);
-                    const y = window.scrollY;
+                    const more = document.querySelector('details[data-reading-key=why-state]'); more.open = true;
+                    window.scrollTo(0, 150);   // well inside the page even when the content gets shorter
+                    // 0.9.9.2's phone header can change height with the view and the browser then moves scrollY
+                    // by the same amount, so the reading position is the scroll below the top bar.
+                    const below = () => window.scrollY - document.querySelector('.topbar').offsetHeight;
+                    const y = window.scrollY, spot = below();
                     let stable = true, open = true, scroll = true;
                     for (const update of FIXTURE.updates) {
                       FIXTURE.view = update.view; FIXTURE.details[id] = update.detail;
                       await refresh(); await loadDetail(id); render(true);
-                      stable &&= root === document.querySelector('#app > div') && more === document.querySelector('details.more');
-                      open &&= document.querySelector('details.more').open;
-                      scroll &&= Math.abs(window.scrollY - y) < 2;
+                      stable &&= root === document.querySelector('#app > div') && more === document.querySelector('details[data-reading-key=why-state]');
+                      open &&= document.querySelector('details[data-reading-key=why-state]').open;
+                      scroll &&= Math.abs(below() - spot) < 2;
                     }
-                    document.body.dataset.reading = JSON.stringify({stable, open, scroll, y, title: document.querySelector('.task').textContent});
+                    document.body.dataset.reading = JSON.stringify({stable, open, scroll, y, title: document.querySelector('.sc-task').textContent});
                 """)
                 r = result(page)
                 self.assertGreater(r['y'], 100)
@@ -68,6 +72,7 @@ class DetailsUpdates(unittest.TestCase):
             with self.subTest(width=width):
                 page = run(self.data, '/g/'+urllib.parse.quote(identity, safe=''), width, 844, script="""
                     const id = FIXTURE.ids.ui; await loadDetail(id);
+                    document.querySelector('[data-door=links]').click();
                     const body = graph.shell.sheetBody, root = body.firstChild;
                     const editor = body.querySelector('details.editor'); editor.open = true;
                     graph.sheetExpanded = true; graph.shell.sheet.classList.add('expanded');
@@ -95,26 +100,35 @@ class DetailsUpdates(unittest.TestCase):
         page = run(self.data, '/g/'+urllib.parse.quote(identity, safe=''), 390, 844, script="""
             const id = FIXTURE.ids.ui; await loadDetail(id);
             const body = graph.shell.sheetBody;
+            const updates = async (list) => { for (const update of list) {
+              FIXTURE.view = update.view; FIXTURE.details[id] = update.detail;
+              await refresh(); await loadDetail(id); render(true);
+            } };
+            // Activity screen: the message picker keeps its choice and its button the current handler.
+            document.querySelector('[data-door=activity]').click();
+            const picker = body.querySelector('select[aria-label="How many messages"]'); picker.value = '25';
+            await updates(FIXTURE.updates.slice(0, 4));
+            let saved, limit;
+            loadConversation = async (id, count) => { limit = count; };
+            [...body.querySelectorAll('button')].find(b => b.textContent === 'Show messages').click();
+            // Links screen: the relations editor keeps its draft, focus and selection.
+            document.querySelector('.screen-back').click();
+            document.querySelector('[data-door=links]').click();
             const editor = body.querySelector('details.editor'); editor.open = true;
             const input = editor.querySelector('input[aria-label="Team"]');
             input.value = 'draft-team'; input.focus(); input.setSelectionRange(2, 5);
-            const picker = body.querySelector('select[aria-label="How many messages"]'); picker.value = '25';
-            for (const update of FIXTURE.updates) {
-              FIXTURE.view = update.view; FIXTURE.details[id] = update.detail;
-              await refresh(); await loadDetail(id); render(true);
-            }
+            await updates(FIXTURE.updates.slice(4));
             const focus = document.activeElement === input;
             const selection = input.selectionStart === 2 && input.selectionEnd === 5;
             const draft = input.value;
-            let saved, limit;
             relate = async (body) => { saved = body; };
-            loadConversation = async (id, count) => { limit = count; };
             [...editor.querySelectorAll('button')].find(b => b.textContent === 'Set team').click();
-            [...body.querySelectorAll('button')].find(b => b.textContent === 'Show messages').click();
             editor.open = false; render(true);
             const closed = editor === body.querySelector('details.editor') && !editor.open;
+            input.blur();   // a real tap on Back moves the focus first
+            document.querySelector('.screen-back').click();
             document.body.dataset.reading = JSON.stringify({focus, selection, draft, saved, limit, closed,
-                latest: body.querySelector('.task').textContent});
+                latest: body.querySelector('.sc-task').textContent});
         """)
         r = result(page)
         self.assertTrue(r['focus'])
@@ -128,16 +142,17 @@ class DetailsUpdates(unittest.TestCase):
 
     def test_session_switch_and_unwatched_removal_do_not_reuse_private_details(self):
         identity = self.data['ids']['ui']
-        page = run(self.data, '/a/'+urllib.parse.quote(identity, safe=''), 390, 700, script="""
+        page = run(self.data, '/a/'+urllib.parse.quote(identity, safe='')+'/status', 390, 700, script="""
             const id = FIXTURE.ids.ui; await loadDetail(id);
-            const more = document.querySelector('details.more'); more.open = true;
-            location.hash = '#/a/' + encodeURIComponent(FIXTURE.ids.docs);
+            const fold = () => document.querySelector('details[data-reading-key=why-state]');
+            const more = fold(); more.open = true;
+            location.hash = '#/a/' + encodeURIComponent(FIXTURE.ids.docs) + '/status';
             await new Promise(r => setTimeout(r, 100));
-            const separate = more !== document.querySelector('details.more') && !document.querySelector('details.more').open;
+            const separate = more !== fold() && !fold().open;
             FIXTURE.view.agents = FIXTURE.view.agents.filter(a => a.identity !== FIXTURE.ids.docs);
             FIXTURE.view.version++; await refresh(true);
             document.body.dataset.reading = JSON.stringify({separate, unavailable: document.querySelector('#app').textContent.includes('not in a watched workspace'),
-                hidden: !document.querySelector('details.more')});
+                hidden: !document.querySelector('.details')});
         """)
         r = result(page)
         self.assertTrue(r['separate'])

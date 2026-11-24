@@ -171,7 +171,7 @@ class InspectorRunsOn(unittest.TestCase):
         cls.ids = {a.get("name"): a["identity"] for a in cls.data["view"]["agents"]}
 
     def open(self, name, data=None):
-        return reading(run(data or self.data, f"/g/{self.ids[name]}", 390, 844, script=INSPECTOR))
+        return reading(run(data or self.data, f"/g/{self.ids[name]}", 390, 844, script="await new Promise(r => setTimeout(r, 400)); document.querySelector('[data-door=usage]').click();" + INSPECTOR))
 
     def test_trace_values_with_effort_dots_and_their_source(self):
         r = self.open("web-lead")

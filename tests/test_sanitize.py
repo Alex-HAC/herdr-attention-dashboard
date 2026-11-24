@@ -28,7 +28,7 @@ class Redaction(unittest.TestCase):
 
     def test_default_patterns(self):
         text = ("token=abc123 password: hunter2 sk-abcdefghijklmnopqrstuv ghp_abcdefghijklmnopqrstuvwxyz "
-                "AKIAABCDEFGHIJKLMNOP plain words stay")  # gitleaks:allow (fake test value)
+                "AKIAABCDEFGHIJKLMNOP plain words stay")
         out, count = redact(text, self.patterns)
         for secret in ("abc123", "hunter2", "sk-abc", "ghp_abc", "AKIAABCD"):
             self.assertNotIn(secret, out)

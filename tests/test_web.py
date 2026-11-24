@@ -26,6 +26,8 @@ class Responsive(unittest.TestCase):
             "overview": (cls.data, "/list"),
             "workspace": (cls.data, "/w/w1"),
             "agent": (cls.data, "/a/" + urllib.parse.quote(cls.lead["identity"], safe="")),
+            "agent-activity": (cls.data, "/a/" + urllib.parse.quote(cls.lead["identity"], safe="") + "/activity"),
+            "agent-status": (cls.data, "/a/" + urllib.parse.quote(cls.lead["identity"], safe="") + "/status"),
             "settings": (cls.data, "/settings"),
             "empty": (cls.empty, "/list"),
         }
@@ -95,14 +97,16 @@ class Responsive(unittest.TestCase):
     def test_agent_detail_shows_evidence_timeline_and_unknowns(self):
         html = self.main("agent", "phone")
         self.assertIn("Review the checkout plan", html)
-        self.assertIn("none declared", html)
-        self.assertIn("here now", html)
-        self.assertIn("Same screen in", html)
-        self.assertIn("New task title", html)
-        self.assertIn("≈ The collector noticed this later; the real time is unknown.", html)
-        self.assertIn("Seen ", html)
+        # Empty facts ("none declared") and "here now" are gone (details review 2026-11-24).
+        self.assertNotIn("none declared", html)
+        self.assertNotIn("here now", html)
         self.assertNotIn(">Explain<", html)
         self.assertIn("≥", html, "unknown start is marked")
+        self.assertIn("Same screen in", self.main("agent-status", "phone"))
+        activity = self.main("agent-activity", "phone")
+        self.assertIn("New task title", activity)
+        self.assertIn("≈ The collector noticed this later; the real time is unknown.", activity)
+        self.assertIn("Seen ", activity)
 
     def test_settings_chooser_and_empty_state(self):
         settings = self.main("settings", "phone")

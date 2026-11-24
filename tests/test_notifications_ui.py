@@ -217,9 +217,8 @@ class NotificationsView(unittest.TestCase):
         event={'id':98765,'at':1700000000,'type':'completion','notify_state':'expired','title':'Choose the network','resolved_at':1700000100}
         event['state_label']=event['label']=event_label(event)
         data['details'][identity]['events'].append(event)
-        r=self.probe('/a/'+quote(identity,safe=''), """
-          const historyDetails=[...document.querySelectorAll('main details')].find(d=>d.querySelector('summary')?.textContent.startsWith('Details:'));
-          historyDetails.open=true;
+        r=self.probe('/a/'+quote(identity,safe='')+'/activity', """
+          document.querySelector('.activity-filter button:nth-child(2)').click(); await new Promise(r=>setTimeout(r,50));
           out.expanded=document.querySelector('main').innerText;
         """,data=data)
         self.assertIn('No longer needed',r['expanded'])

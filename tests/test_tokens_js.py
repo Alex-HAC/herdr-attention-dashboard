@@ -30,7 +30,7 @@ class TokensJs(unittest.TestCase):
 
     def test_web_colours_only_in_token_block(self):
         web = REPO / "herdr_attention" / "web"
-        for name in ("style.css", "app.js", "graph.js"):
+        for name in ("style.css", "app.js", "graph.js", "details.js"):
             source = (web / name).read_text()
             if name == "style.css":
                 source = re.sub(r"/\* tokens:start\b.*?/\* tokens:end \*/", "", source, flags=re.S)

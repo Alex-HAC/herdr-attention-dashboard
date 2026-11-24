@@ -371,10 +371,11 @@ function hashLink(name, id = "") {
 }
 
 // One action component used by all views. A phone never creates its markup.
-function openInHerdrButton(agent) {
+function openInHerdrButton(agent, { iconOnly = false } = {}) {
   // Focus needs a Herdr pane; in-process subagents have none.
   if (!app.view?.features?.[UI.features.desktop_focus] || !agent?.present || !agent.pane_id) return null;
-  return h("button", { class: "btn open-in-herdr", type: "button", text: UI.labels.open_in_herdr,
+  return h("button", { class: `btn open-in-herdr${iconOnly ? " quiet icon-only" : ""}`, type: "button", text: iconOnly ? null : UI.labels.open_in_herdr,
+    title: iconOnly ? UI.labels.open_in_herdr : null, "aria-label": iconOnly ? UI.labels.open_in_herdr : null,
     "data-focus-identity": agent.identity, on: { click: async (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -412,6 +413,7 @@ function evidenceLines(agent) {
     lines.push(`Same screen in ${e.output_checks || "several"} checks over ${e.output_unchanged_minutes} min (every ${e.output_checked_every_seconds} s; ${e.output_source || "visible screen"})`);
   if (e.last_check_at) lines.push(`Last check ${ago(e.last_check_at)} ago`);
   if (e.output_check) lines.push(`Output check ${e.output_check}`);
+  if (e.waiting_on) lines.push(`Same screen is expected: ${e.waiting_on}`);   // flow.py quiet_reason (0.9.10.0)
   if (b.quiet_minutes !== undefined)
     lines.push(`Quiet for ${b.quiet_known ? "" : "at least "}${b.quiet_minutes} min; parked after ${b.parked_after_minutes} min`);
   if (e.reason) lines.push(`Reason: ${e.reason}${e.last_status ? ` (was ${e.last_status})` : ""}`);
@@ -714,7 +716,7 @@ function render(force = false) {
   if (["overview", "agent", "settings", "quotas", "questions", "notifications", "visuals"].includes(r.name) && !routeChanged) updateReadingView(main, content);
   else main.replaceChildren(content);
   if (routeChanged) window.scrollTo(0, app.scroll[hashKey()] || 0);
-  if (r.name === "agent" && r.section) openAgentSection(r); else app.sectionShown = null;
+  if (r.name === "agent") openAgentSection(r); else { app.sectionShown = null; app.sectionAgent = null; }
   app.renderedRoute = r.name;
   decorateSavedControls(main);
   if (r.name === "notifications") focusNotification(r);
@@ -1635,15 +1637,21 @@ function repliedText(reply, a = null) {
   return reply.to && a && reply.to !== displayName(a) ? askText("replied_to", { text, to: reply.to, when }) : askText("replied", { text, when });
 }
 
+// D4 (details review): people are named by displayName; the task title is a title, not a name.
+function askSideName(side, fallback) {
+  const other = side?.identity ? agentById(side.identity) : null;
+  return other ? displayName(other) : side?.name || fallback;
+}
+
 function askRoute(a, item) {
-  const asker = item.asked_by?.name || displayName(a), to = item.answer_to?.name || asker;
+  const asker = askSideName(item.asked_by, displayName(a)), to = item.answer_to ? askSideName(item.answer_to, asker) : asker;
   return item.answer_to?.where ? askText("route_where", { asker, to, where: item.answer_to.where }) : askText("route", { asker, to });
 }
 
 // v0.9.7: the route sentence with each side's account icon inline (asked_by.icon, answer_to.icon).
 // A side without a recorded account shows its name only. The plain sentence stays as the title.
 function askRouteNode(a, item) {
-  const asker = item.asked_by?.name || displayName(a), to = item.answer_to?.name || asker;
+  const asker = askSideName(item.asked_by, displayName(a)), to = item.answer_to ? askSideName(item.answer_to, asker) : asker;
   const askerIcon = item.asked_by ? item.asked_by.icon : a.icon;
   const sides = { asker: [askerIcon, asker], to: [item.answer_to?.name ? item.answer_to.icon : askerIcon, to],
     where: [null, item.answer_to?.where || ""] };
@@ -1832,12 +1840,6 @@ function questionsBlock(view, compact=true) {
     entries.length>visible.length?h("a",{class:"btn",href:hashLink("questions"),text:`+${entries.length-visible.length} more`}):null);
 }
 
-function watchedQuestions(a) {
-  const questions=(app.view.questions || []).filter(q=>q.keep_open && q.identity===a.identity);
-  return questions.length ? h("div",{class:"watched-questions","data-reading-key":`watched-questions:${a.identity}`},
-    questionsBlock({...app.view,questions,agents:app.view.agents.filter(x=>x.identity===a.identity)},false)) : null;
-}
-
 function subagentFold(parent, {onToggle, open=false}={}) {
   if (!parent.finished_subagents?.length) return null;
   return h("details",{class:"subagent-fold","data-reading-key":`subagents:${parent.identity}`,open,
@@ -1866,11 +1868,12 @@ function attentionStrip(view) {
   const groups = tierOrder().map((tier) => [tier, items.filter((a) => agentTier(a) === tier)]).filter(([, list]) => list.length);
   // The status header already gives the count; the card lists the items, calm.
   return h("section", { class: "card attention", "aria-label": `Needs a look: ${head}`, "data-reading-key":"attention" },
-    groups.map(([tier, list]) => { const hint = groupReadHint(list); return h("div", { class: "attention-group", "data-reading-key":`attention:${tier}` },
+    groups.map(([tier, list]) => { const hint = groupReadHint(list), reason = groupReason(list); return h("div", { class: "attention-group", "data-reading-key":`attention:${tier}` },
       h("h2", { class: "attention-tier", text: `${tierHead(tier)} · ${list.length}` }),
+      reason ? h("p", { class: "muted small group-reason section-hint", text: reason }) : null,
       hint ? h("p", { class: "muted small read-state-hint section-hint", text: hint }) : null,
       h("ul", { class: "attention-list" },
-        list.map((a) => attentionRow(a, { sectionHint: hint })))); }));
+        list.map((a) => attentionRow(a, { sectionHint: hint, groupReason: reason })))); }));
 }
 
 // Stacked row (PH-5): name and age, the reason on one line, then the AI headline or
@@ -1915,6 +1918,12 @@ function attentionDetail(a, headline) {
       : h("span", { class: "detail" }, summaryLine(a), a.snippet ? [" · ", h("q", { class: "snippet" }, mdLine(a.snippet, cut))] : null)];
 }
 
+// The details review (2026-11-24): a reason every row of a group shares is said once, under the heading.
+function groupReason(list) {
+  const reasons = [...new Set(list.map(attentionReasonText))];
+  return list.length > 1 && reasons.length === 1 && reasons[0] ? reasons[0] : null;
+}
+
 function attentionReasonText(a) {
   const s = asksOf(a);
   if (s?.state === "questions" && askItems(a).length) return askCount(a);
@@ -1923,7 +1932,7 @@ function attentionReasonText(a) {
   return attentionReason(a);
 }
 
-function attentionRow(a, { sectionHint = null } = {}) {
+function attentionRow(a, { sectionHint = null, groupReason = null } = {}) {
   const s = a.summary;
   const title = notificationTitle(a);
   const headline = title || (s && s.status === "complete" && s.current && s.headline);
@@ -1934,13 +1943,14 @@ function attentionRow(a, { sectionHint = null } = {}) {
       h("span", { class: "who" }, displayName(a), accountIcon(a.icon, { size: 14, text: false }), modelBadge(a), watchBadge(a)),
       h("span", { class: "age", text: a.event_at ? ago(a.event_at) : "" }),
       title && !asksShown(a) ? h("span", { class: "att-headline" }, mdLine(title)) : null,
-      h("span", { class: `reason${title && !asksShown(a) ? " muted" : ""}`, text: attentionReasonText(a) }),
+      groupReason ? null : h("span", { class: `reason${title && !asksShown(a) ? " muted" : ""}`, text: attentionReasonText(a) }),
       title && !asksShown(a) ? (a.question ? h("q",{class:"detail question-quote"},mdLine(a.question.text, UI.ask_items.cut.line)) : null) : attentionDetail(a, headline),
       h("span", { class: "ws", text: a.workspace_label })),
     h("div", {class:"attention-row-actions"},
       // Question items are answered in their own rows (Questions for you, agent page).
       agentTier(a)==='waiting_on_you' && !asks?easyReplyButton(a,{question:a.question}):null,
-      headline || asksShown(a) ? null : summarizeButton(a, { class: "quiet small" }), terminalButton(a, { cls: "quiet" }), openInHerdrButton(a),
+      headline || asksShown(a) ? null : summarizeButton(a, { class: "quiet icon-only", iconOnly: true }), terminalButton(a, { label: false, cls: "quiet icon-only" }),
+      openInHerdrButton(a, { iconOnly: true }),
       attentionMarkRead(a, { sectionHint })),replySlot(`attention:${a.identity}`,a));
 }
 
@@ -2514,7 +2524,7 @@ function agentCard(a, showState = false) {
   const card = h("a", { class: "card agent", href: hashLink('agent', a.identity) },
     h("div", { class: `avatar s-${a.state}` }, initials(a), avatarCorner(a)),
     h("div", {},
-      h("div", { class: "agent-top" }, h("span", { class: "agent-name" }, displayName(a), modelBadge(a), watchBadge(a)), h("span", { class: "agent-since", text: since(a) })),
+      h("div", { class: "agent-top" }, h("span", { class: "agent-name" }, h("span", { class: "agent-name-text", text: displayName(a) }), modelBadge(a), watchBadge(a)), h("span", { class: "agent-since", text: since(a) })),
       task, meta));
   const focus = openInHerdrButton(a);
   return h("div", { class: "agent-with-focus", "data-reply-anchor":`card:${a.identity}` }, card,
@@ -2739,7 +2749,7 @@ async function loadOutput(identity, raw = false) {
 // Mark read closes the item: back to the list it was opened from (same
 // scroll position), or out of the graph inspector. On failure it stays open
 // with the error; it never pretends to be read.
-async function ack(eventId, identity, {navigate=true} = {}) {
+async function ack(eventId, identity, {navigate=true, settle=null} = {}) {
   app.ackErrors[identity] = null;
   try {
     await api(apiPath("event_ack", eventId), { method: "POST" });
@@ -2749,6 +2759,7 @@ async function ack(eventId, identity, {navigate=true} = {}) {
     render(true);
     return;
   }
+  if (settle) await settle();
   const r = route();
   if (navigate && r.name === "graph") selectNode(null);
   else if (navigate && r.name === "agent") goBack(app.view.agents.find((a) => a.identity === identity));
@@ -2779,119 +2790,20 @@ function timelineItem(item) {
     h("div", { class: "what" }, h("b", { text: label }), item.title ? ` · ${item.title}` : ""));
 }
 
-// One note for the whole list, only when some time is approximate.
-function timeline(activity, limit) {
-  const items = activity.slice(0, limit);
-  return [h("ul", { class: "timeline" }, items.map(timelineItem)),
-    items.some((item) => !item.live) ? h("p", { class: "note", text: "≈ The collector noticed this later; the real time is unknown." }) : null];
-}
-
-// Deep links from notifications: #/a/<identity>/conversation and /output open
-// the page with Details open, scrolled to "Conversation and terminal", and
-// load that part once. Plain #/a/<identity> is unchanged.
+// Agent routes: #/a/<id>/status, /activity, /usage and /links open that screen of the details
+// view (details.js). Old deep links keep working: /conversation and /output open Activity and
+// load that part once, /report opens Status, /terminal opens the terminal sheet (terminal.js).
 const AGENT_SECTIONS = Object.keys(UI.views).filter((name) => UI.views[name] === "agent" && name !== "agent");
 
 function openAgentSection(r) {
   if (app.sectionShown === location.hash) return;
-  if (r.section === "terminal") { app.sectionShown = location.hash; return; }   // v0.9.8: the sheet (terminal.js)
-  if (r.section === "report") {
-    const report = $("coordinator-report"); if (!report) return;
-    app.sectionShown = location.hash; setTimeout(() => report.scrollIntoView({block:"start"}),0); return;
-  }
-  const target = $("agent-conversation");
-  const more = document.querySelector("details.more");
-  if (!target || !more) return;
+  // Another screen of the same agent starts at the top; a new page keeps its saved scroll.
+  if (app.sectionAgent === r.id && r.section !== "terminal") window.scrollTo(0, 0);
   app.sectionShown = location.hash;
-  more.open = true;
-  setTimeout(() => target.scrollIntoView({ block: "start" }), 0);
-  const agent = app.view.agents.find((a) => a.identity === r.id);
+  app.sectionAgent = r.id;
+  const agent = agentById(r.id);
   if (r.section === "conversation" && !graph.conversation[r.id]) loadConversation(r.id, 10, false);
   if (r.section === "output" && agent && agent.present && !app.outputs[r.id]) loadOutput(r.id);
-}
-
-function renderAgent(r) {
-  const fromView = app.view.agents.find((a) => a.identity === r.id);
-  const detail = app.details[r.id];
-  if (!detail || (Date.now() / 1000 - (detail.generated_at || 0)) * 1000 > DETAIL_MS) loadDetailSoon(r.id);
-  const a = fromView ? { ...detail?.agent, ...fromView } : null;
-  if (!a) {
-    return h("div", {}, h("a", { class: "back", href: hashLink('list'), text: "Workspaces" }),
-      h("section", { class: "card empty" }, h("h1", { text: "Not available" }),
-        h("p", { class: "muted", text: "This agent is gone or not in a watched workspace." })));
-  }
-  const completed = (detail?.events || []).filter((e) => e.type === "completion");
-  const alerts = (detail?.events || []).filter((e) => e.type !== "completion");
-
-  return h("div", { "data-reading-key": `agent:${r.id}` },
-    h("a", { class: "back", href: hashLink('workspace', a.workspace_id), text: a.workspace_label }),
-    h("div", { class: "detail-head" },
-      h("div", { class: `avatar s-${agentTier(a) === "waiting_on_you" ? "needs_you" : a.state}`, "aria-hidden": "true" }, initials(a)),
-      h("div", { class: "detail-name" },
-        h("h1", { text: displayName(a) }),
-        h("p", { class: "detail-sub" },
-          a.title ? h("span", { class: "task", text: a.title }) : h("span", { class: "task" }, unknown("no task title reported")),
-          ` · ${a.runtime?.service?.label || a.agent || "agent"}`)), watchCloselyButton(a)),
-    h("p", { class: "muted small watch-explanation", text: UI.watch_closely.labels.hint }),
-    agentPills(a),
-    runsOn(a),
-    !a.present ? h("p", { class: "note", "data-reading-key": "gone", text: "This agent is no longer running. Showing its last known details." }) : null,
-    a.quota_wall ? h("p", { class: "note", "data-reading-key": "quota-wall", text: `${a.quota_wall.provider} quota-walled until ${a.quota_wall.until ? clock(a.quota_wall.until) : "cleared"}. Routing skips this provider; no automatic restart.` }) : null,
-    a.launch?.sandbox ? h("p", { class: "note", "data-reading-key": "sandbox", text: `Sandbox: ${a.launch.sandbox}` }) : null,
-    watchedQuestions(a),
-    summaryCard(a, detail),
-    subagentFold(a),
-    coordinatorReport(a),
-    // The coordinator report already includes the team strip; a second Latest visuals repeats it.
-    a.is_coordinator ? null : visualsStrip(`agent:${a.identity}`,`identity=${encodeURIComponent(a.identity)}`),
-    agentStats(a),
-    agentGoTo(a),
-    h("section", { class: "card recent-timeline", "data-reading-key": "recent-timeline" },
-      h("h2", { class: "sub", text: "Recent history" }),
-      detail?.activity?.length ? timeline(detail.activity, 3) : h("p", { class: "muted small", text: "Nothing recorded yet." }),
-      h("button", { class: "btn quiet", type: "button", text: "Full history", on: { click: () => {
-        const more = document.querySelector("details.more"); if (more) more.open = true;
-        document.querySelector("#agent-history")?.scrollIntoView({ block: "start" });
-      } } })),
-    h("details", { class: "more", "data-reading-key": "agent-facts" }, h("summary", { text: "Details: facts, metrics, evidence, history" }),
-    h("div", { class: "split" },
-      h("div", {},
-        h("section", { class: "card" },
-          h("dl", { class: "facts" },
-            h("dt", { text: "In this state" }), h("dd", { text: `${since(a)}${a.since_known ? "" : " (started before the collector saw it)"}` }),
-            h("dt", { text: "Last activity" }), h("dd", { text: lastActivity(a) }),
-            h("dt", { text: "Last seen" }), h("dd", { text: !a.present ? "gone" : app.view.collector.herdr.connected ? "here now" : `${ago(a.last_seen)} ago` }),
-            h("dt", { text: "Tab" }), h("dd", {}, a.tab_label || unknown()),
-            h("dt", { text: "Folder" }), h("dd", {}, a.cwd || unknown()),
-            h("dt", { text: "Agent" }), h("dd", { text: a.agent || "unknown" }),
-            h("dt", { text: "Reports to" }), h("dd", {}, a.reports_to
-              ? (a.reports_to.identity ? h("a", { class: "chip", href: hashLink('agent', a.reports_to.identity), text: a.reports_to.name }) : a.reports_to.name)
-              : unknown("none declared")),
-            h("dt", { text: "Last finished" }), h("dd", {}, a.last_done ? `${clock(a.last_done.at)}${a.last_done.title ? ` · ${a.last_done.title}` : ""}` : unknown("nothing seen yet"))),
-          h("div", { class: "actions" },
-            h("a", { class: "btn", href: hashLink('graph', a.identity), text: "Show in graph" }))),
-        h("h2", { class: "section", text: "Metrics" }), metricsCard(a),
-        h("h2", { class: "section", text: "Connections" }), connectionsCard(a, app.view),
-        h("h2", { class: "section", id: "agent-conversation", text: "Conversation and terminal" }), conversationCard(a),
-        h("h2", { class: "section", text: "Why this state" }),
-        h("section", { class: "card" }, h("ul", { class: "evidence" }, evidenceLines(a).map((line) => evidenceItem(line, a)))),
-        h("h2", { class: "section", text: "Finished work" }),
-        h("section", { class: "card" },
-          completed.length ? h("ul", { class: "timeline" }, completed.map((e) => h("li", { class: "s-done" },
-            h("div", { class: "when", text: `${clock(e.at)}${e.state_label ? ` · ${e.state_label}` : ""}${e.seen_late ? " · seen late" : ""}` }),
-            h("div", { class: "what" }, e.title || unknown("no title at the time")))))
-            : h("p", { class: "muted small", text: detail ? "No finished turns seen in the last days." : "Loading…" })),
-        alerts.length ? [h("h2", { class: "section", text: "Recent alerts" }),
-          h("section", { class: "card" }, h("ul", { class: "timeline" }, alerts.slice(0, 8).map((e) => h("li", { class: "s-needs_you" },
-            h("div", { class: "when", text: `${clock(e.at)}${e.resolved_at ? ` · over at ${clock(e.resolved_at)}` : " · open"}` }),
-            h("div", { class: "what", text: e.label })))))] : null),
-      h("aside", {},
-        h("h2", { class: "section", id: "agent-history", text: "Timeline" }),
-        h("section", { class: "card" },
-          detail?.activity?.length ? timeline(detail.activity, 30)
-            : h("p", { class: "muted small", text: detail ? "Nothing recorded yet." : "Loading…" })),
-        detail?.same_tab?.length ? [h("h2", { class: "section", text: "Same tab" }),
-          h("div", { class: "chips" }, detail.same_tab.map((p) => h("a", { class: "chip", href: hashLink('agent', p.identity), text: p.name || p.agent }))),
-          h("p", { class: "note", text: reportingLineNote(app.view, a.workspace_id) })] : null))));
 }
 
 // Media discovery runs only when this section is opened; no poll starts a scan.
@@ -2928,39 +2840,14 @@ function draftCoordinator(identity, text, steer=false) {
   openReply(identity,undefined,null,null,{steer}); app.composer.text = text; renderComposer(); scheduleReplyPreview();
 }
 
+// Costs tokens, so it has the AI look (spark, magenta) like Summarize.
 function statusReportButton(a, {named=false}={}) {
   if (!a?.is_coordinator || app.view.summaries?.enabled === false) return null;
-  return h("button", {class:"btn status-report-button",type:"button",text:named?`Status report: ${displayName(a)}`:"Status report",on:{click:async event=>{
+  return h("button", {class:"btn btn-ai status-report-button",type:"button",on:{click:async event=>{
     event.preventDefault(); event.stopPropagation();
     location.hash=hashLink("report",a.identity);
     await requestSummary(a.identity,"report");
-  }}});
-}
-
-function coordinatorReport(a) {
-  if (!a.is_coordinator) return null;
-  const row=a.status_report, report=row?.summary, labels=UI.watch_closely.labels;
-  // Current questions and blockers always come from the current snapshot.
-  const ids=new Set(report?.members || [a.identity]);
-  const questions=(app.view.questions || []).filter(q=>ids.has(q.identity) && !q.keep_open);
-  return h("section",{class:"card coordinator-report",id:"coordinator-report","data-reading-key":"coordinator-report"},
-    h("div",{class:"reply-row-head"},h("h2",{text:"Coordinator status"}),easyReplyButton(a,{anchor:`report:${a.identity}`})),
-    replySlot(`report:${a.identity}`,a),statusReportButton(a),
-    !row ? h("p",{class:"muted",text:"Build a report from this team’s traces and output when you need it."}) : null,
-    row && row.status !== "complete" ? h("p",{text:row.status === "failed" ? `Report failed: ${row.error}` : "Building report…"}) : null,
-    row?.refresh_status ? h("p",{class:"muted small report-refresh",text:row.refresh_status==='failed' ? `${labels.refresh_failed}: ${row.refresh_error || ""}` : labels.refreshing}) : null,
-    report ? [h("p",{class:"report-status"},fileNodes(report.status)),
-      h("p",{class:"muted small",text:`${labels.updated} ${clock(row.finished_at)} · ${row.out_of_date ? labels.out_of_date : "Cached report"}`}),
-      questionEntries({...app.view,questions,agents:app.view.agents.filter(x=>ids.has(x.identity))}).map(questionEntryCard),
-      [ ["Done","done"], ["In progress","in_progress"], ["What’s left","left"] ].map(([title,key])=>report[key]?.length ? h("div",{},h("h3",{text:title}),h("ul",{},report[key].slice(0,3).map(t=>h("li",{},fileNodes(t))))) : null),
-      report.stuck?.length ? h("div",{},h("h3",{text:"Stuck workers"}),report.stuck.map(worker=>h("p",{},
-        h("a",{href:hashLink("agent", worker.identity),text:worker.name}),` · ${worker.reason}`,
-        h("button",{class:"btn quiet",type:"button",text:"Nudge coordinator",on:{click:()=>draftCoordinator(a.identity,`Please check on ${worker.name}: ${worker.reason}. What would help them continue?`)}})))) : null
-    ] : null,
-    h("div",{class:"actions"},h("button",{class:"btn",type:"button",text:"Steer",on:{click:()=>draftCoordinator(a.identity,"Please focus the team on: ",true)}}),
-      h("button",{class:"btn quiet",type:"button",text:"Ask coordinator for status",on:{click:()=>draftCoordinator(a.identity,"Please give a short team status: done, in progress, what is left, and any blockers that need me.")}})),
-    visualsStrip(`team:${a.identity}`,`identity=${encodeURIComponent(a.identity)}&team=1`),
-    h("p",{class:"muted small",text:"The report uses your summary settings. Messages open as editable drafts for confirmation."}));
+  }}}, icon("spark","btn-icon"), named?`Status report: ${displayName(a)}`:"Status report");
 }
 
 function summarizeLabel(a, failed) {
@@ -2976,7 +2863,8 @@ function summarizeButton(a, extra = {}) {
   return h("button", { class: "btn btn-summarize " + (extra.class || ""), type: "button", disabled: busy,
     "aria-busy": busy ? "true" : "false",
     on: { click: (event) => { event.preventDefault(); event.stopPropagation(); requestSummary(a.identity, "refresh"); } },
-    "aria-label": summarizeLabel(a, extra.failed) }, icon("spark", "btn-icon"), summarizeLabel(a, extra.failed));
+    "aria-label": summarizeLabel(a, extra.failed), title: extra.iconOnly ? summarizeLabel(a, extra.failed) : null },
+    icon("spark", "btn-icon"), extra.iconOnly ? null : summarizeLabel(a, extra.failed));
 }
 
 async function requestSummary(identity, mode) {
@@ -2994,37 +2882,6 @@ async function requestSummary(identity, mode) {
   await refresh(true);
 }
 
-// Summary first: what happened and what is needed, labelled as AI, with its
-// source range and freshness. Falls back to the agent's own last message.
-// Theme v0.8 agent page: tier pill (solid only for Waiting on you) plus the
-// specific kind; a three-number strip; "go to" chips.
-function agentPills(a) {
-  const you = agentTier(a) === "waiting_on_you";
-  const kind = NEEDS.includes(a.kind) || a.kind === "stall" || a.awaiting_user ? (a.label || null) : null;
-  return h("div", { class: "detail-pills" },
-    you ? h("span", { class: "pill state s-needs_you", text: tierHead("waiting_on_you") }) : null,
-    h("span", { class: `pill state s-${a.kind === "stall" ? "caution" : you ? "parked" : a.state}`,
-      text: kind && kind !== tierHead("waiting_on_you") ? kind : a.state_label }));
-}
-
-function agentStats(a) {
-  const reports = a.reports_to
-    ? (a.reports_to.identity ? h("a", { href: hashLink('agent', a.reports_to.identity), text: a.reports_to.name }) : a.reports_to.name)
-    : unknown("none");
-  return h("section", { class: "card stat-row" },
-    h("div", {}, h("span", { class: "stat-label", text: "In this state" }), h("b", { text: since(a) })),
-    h("div", {}, h("span", { class: "stat-label", text: "Last seen" }),
-      h("b", { text: !a.present ? "gone" : app.view.collector.herdr.connected ? "now" : `${ago(a.last_seen)} ago` })),
-    h("div", {}, h("span", { class: "stat-label", text: "Reports to" }), h("b", {}, reports)));
-}
-
-function agentGoTo(a) {
-  return h("div", { class: "chips agent-goto" }, easyReplyButton(a,{question:a.question,anchor:`agent:${a.identity}`}),replySlot(`agent:${a.identity}`,a),terminalButton(a),openInHerdrButton(a),
-    h("a", { class: "chip", href: hashLink("conversation", a.identity), text: "Conversation" }),
-    h("a", { class: "chip", href: hashLink("output", a.identity), text: "Terminal output" }),
-    h("a", { class: "chip", href: hashLink('graph', a.identity), text: "Show in graph" }));
-}
-
 function contentLabel(key) { return app.view.content_labels?.[key] || key; }
 
 function actionLine(a, action) {
@@ -3040,79 +2897,6 @@ function actionLine(a, action) {
     action?.kind==="reply"?easyReplyButton(a || agentById(action.target),{question:q,anchor:key}):
     action?.kind==="open_agent"?h("a",{class:"btn primary",href:hashLink("output",action.target),text:"Open agent"}):
     action?.kind==="terminal"?easyReplyButton(a,{question:q,anchor:key}):null,replySlot(key,a));
-}
-
-function summaryCard(a, detail) {
-  const row = detail && detail.summary;
-  const compact = a.summary;
-  const status = row ? row.status : compact ? compact.status : "none";
-  const s = row && row.status === "complete" ? row.summary : null;
-  const action=detail?.presentation || a.presentation;
-  const stale = !!action?.out_of_date;
-  const head = asksShown(a) && !s && status === "none" ? null : h("div", { class: "summary-head" },
-    h("span", { class: "ai-tag", text: "AI summary" }),
-    h("span", { class: `sum-status ${status}`, text: { complete: stale ? "Out of date" : "complete", queued: "queued", running: "summarizing…",
-      failed: "failed", none: "none yet", skipped: "nothing to summarize" }[status] || status }),
-    null);
-  const metadata = row && row.status === "complete" ? h("details",{class:"summary-provenance","data-reading-key":"summary-provenance"},
-    h("summary",{text:"Summary details"}),h("p",{class:"metric-meta",text:`${row.resolved_model || row.model} · effort ${row.effort} · ${clock(row.finished_at)}${row.cached_from ? " · reused (same input)" : ""}`})) : null;
-  const body = [];
-  if (s) {
-    if (s.headline) body.push(h("p", { class: "sum-headline" }, mdLine(s.headline, 0, true)));
-    const n = s.needs_you || {};
-    if (!stale && a.question && n.kind && n.kind !== "none") {
-      body.push(h("div", { class: "sum-needs" },
-        h("b", { text: `${n.kind[0].toUpperCase()}${n.kind.slice(1)}: ` }), n.ask || "",
-        n.options && n.options.length ? h("ul", { class: "options" }, n.options.map((o) => h("li", {}, h("q", { text: o })))) : null,
-        n.why ? h("p", { class: "muted small", text: `Why you: ${n.why}` }) : null));
-    }
-    if (s.accomplished && s.accomplished.length)
-      body.push(h("div", {}, h("h3", { class: "sub", text: contentLabel("done") }), h("ul", {}, s.accomplished.slice(0,3).map((x) => h("li", {}, mdLine(x.replace(/(?:\/?[\w.-]+\/)+[\w.-]+/g,"the file")))))));
-    if (s.tests && s.tests.length)
-      body.push(h("div", {}, h("h3", { class: "sub", text: "Tests" }), h("ul", {}, s.tests.map((t) => h("li", {},
-        `${t.what}: ${t.outcome}`, h("div", { class: "metric-meta", text: `${t.status} · "${t.evidence}"` }))))));
-    if (s.claims && s.claims.length)
-      body.push(h("div", {}, h("h3", { class: "sub", text: "Claims" }), h("ul", {}, s.claims.map((c) => h("li", {},
-        c.text, h("div", { class: "metric-meta", text: `${c.status} · "${c.evidence}"` }))))));
-    if (s.why_it_matters) body.unshift(h("p",{class:"summary-why"},h("b",{text:contentLabel("why")+": "}),s.why_it_matters));
-    if (s.next_step && !stale) body.push(h("p", {}, h("b", { text: "Next: " }), s.next_step));
-    if (s.dropped && s.dropped.length)
-      body.push(h("p", { class: "note", text: `${s.dropped.length} statement(s) left out because the source does not contain them.` }));
-  } else if (asksShown(a)) {
-    // The asks carry the agent's message (Show original); no "none yet" placeholder.
-    if (status === "failed") body.push(h("p", { class: "error", text: `Summary failed: ${row ? row.error : compact.error}` }));
-  } else {
-    if (status === "failed") body.push(h("p", { class: "error", text: `Summary failed: ${row ? row.error : compact.error}` }));
-    const fb = detail && detail.fallback;
-    if (fb && fb.available) {
-      body.push(h("p", { class: "muted small", text: `Not an AI summary: the agent's last message (${clock(fb.at)}):` }));
-      body.push(mdBlock(fb.text, { limit: UI.ask_items.cut.card, place: `fallback:${a.identity}`, cls: "fallback" }));
-    } else {
-      body.push(h("p", { class: "muted small", text: detail ? `${a.label}. No message from the agent to show yet.` : "Loading…" }));
-    }
-  }
-  const err = app.ackErrors[a.identity];
-  return h("section", { class: "card summary", "data-reading-key": "summary", "data-selectable": "summary", "data-agent-identity": a.identity }, actionLine(a,action), head, body,
-    stale ? h("button",{class:"btn",type:"button",text:"Refresh summary",on:{click:()=>requestSummary(a.identity,"refresh")}}):null,
-    summaryActions(a, status), a.read_action?.reason ? h("p",{class:"muted small read-state-hint",text:a.read_action.reason}):null, metadata,
-    err ? h("p", { class: "error", role: "alert", text: `Not marked read: ${err}` }) : null);
-}
-
-// One primary per card: Reply when the agent waits on Alex, else Mark read,
-// else Summarize.
-function summaryActions(a, status) {
-  const canAck = canMarkAgentRead(a);
-  const canReply = a.present && !atQuestionScreen(a) && app.view.features?.reply;
-  const primary = canReply && agentTier(a) === "waiting_on_you" ? "reply" : canAck ? "ack" : "summary";
-  return h("div", { class: "actions" },
-    ["reply","terminal"].includes(a.presentation?.kind) ? null : replyButton(a, primary === "reply"),
-    canAck ? h("button", { class: primary === "ack" && !["reply","terminal","open_agent"].includes(a.presentation?.kind) ? "btn primary" : "btn", type: "button", on: { click: () => ack(a.event_id, a.identity) }, text: "Mark read" }) : null,
-    h("details", { class: "summary-menu", "data-reading-key": "summary-menu" },
-      h("summary", { class: primary === "summary" && !["reply","terminal","open_agent"].includes(a.presentation?.kind) ? "btn primary" : "btn", text: "Summary" }),
-      h("div", { class: "summary-options" },
-        summarizeButton(a, { failed: status === "failed" }),
-        h("button", { class: "btn quiet", type: "button", on: { click: () => requestSummary(a.identity, "longer") }, text: "Summarize longer" }),
-        h("button", { class: "btn quiet", type: "button", on: { click: () => openAsk(a.identity) }, text: "Ask summary agent" }))));
 }
 
 function loadDetailSoon(identity) {
@@ -3871,11 +3655,11 @@ function replyRecipient(a) {
 
 function easyReplyButton(a,{question=null,anchor=null,eventId=null,primary=true}={}) {
   if(!a || !app.view.features?.reply) return null;
-  return h('button',{class:`btn reply-open${primary?' primary':''}`,type:'button',text:UI.easy_reply.labels.reply,
+  return h('button',{class:`btn reply-open btn-write${primary?' primary':''}`,type:'button',
     disabled:!!replyRecipient(a).error,'aria-label':`Reply to ${replyRecipient(a).name || displayName(a)}`,
     on:{click:event=>{event.preventDefault();event.stopPropagation();
       const key=anchor || event.currentTarget.closest('[data-reply-anchor]')?.dataset.replyAnchor || `agent:${a.identity}`;
-      openReply(a.identity,question?.text,eventId,question?.id,{anchor:key});}}});
+      openReply(a.identity,question?.text,eventId,question?.id,{anchor:key});}}},icon('chat','btn-icon'),UI.easy_reply.labels.reply);
 }
 
 function readDraft(key) {
@@ -3960,7 +3744,8 @@ async function sendQuestionReply(q,text) {
     recordReplyResult(result);saveDraft(`question:${q.id}`,'');delete app.questionDrafts?.[q.id];
     if(document.activeElement?.closest('.question-card')?.getAttribute('data-reading-key')===`question:${q.id}`) document.activeElement.blur();
     await refresh(true);
-  } catch(err){flash(`Not sent: ${err.message}`);}
+    return true;
+  } catch(err){flash(`Not sent: ${err.message}`);return false;}
   finally{delete app.replySending[q.id];render(true);}
 }
 
@@ -4011,13 +3796,15 @@ function watchingCloselyCard() {
       on: { click: () => saveSetting("notify_tiers.watch_closely", pins.filter(id => !gone.includes(id))) } }) : null);
 }
 
-function watchCloselyButton(a) {
+// A toggle, not an action: an eye with a pressed state. The explanation is its tooltip.
+function watchCloselyButton(a, { text = true } = {}) {
   if (!a || !a.identity) return null;
   const pinned = watchCloselyList().includes(a.identity);
-  return h("button", { class: "btn watch-toggle", type: "button", "aria-pressed": String(pinned),
-    title: UI.watch_closely.labels.hint,
-    on: { click: (event) => { event.preventDefault(); event.stopPropagation(); toggleWatchClosely(a.identity); } },
-    text: pinned ? "Watching closely" : "Watch closely" });
+  const label = pinned ? "Watching closely" : "Watch closely";
+  return h("button", { class: "icon-toggle watch-toggle", type: "button", "aria-pressed": String(pinned),
+    title: `${label}. ${UI.watch_closely.labels.hint}`, "aria-label": "Watch closely",
+    on: { click: (event) => { event.preventDefault(); event.stopPropagation(); toggleWatchClosely(a.identity); } } },
+    icon("eye"), text ? h("span", { class: "toggle-text", text: label }) : null);
 }
 
 async function toggleWatchClosely(identity) {
@@ -4756,7 +4543,8 @@ function visualThumb(item, alt) {
   return h("span", {class: "visual-thumb-wrap"},
     h("span", {class: "visual-skeleton", "aria-hidden": "true"},
       h("span", {class: "visual-skel-name", text: item.agent || "Visual"})),
-    h("img", {alt: alt || item.name || "", loading: "lazy", decoding: "async", "data-thumb": item.thumbnail || ""}));
+    h("img", {alt: alt || item.name || "", loading: "lazy", decoding: "async",
+      "data-thumb": item.thumbnail || "", "data-full": item.url || ""}));
 }
 
 function queueVisualThumb(img) {
@@ -4772,27 +4560,47 @@ function pumpVisualThumbs() {
     if (!img || !img.isConnected || img.dataset.bound === "src") continue;
     img.dataset.bound = "src";
     const src = img.getAttribute("data-thumb") || "";
+    const full = img.getAttribute("data-full") || "";
     const done = () => { thumbActive = Math.max(0, thumbActive - 1); pumpVisualThumbs(); };
-    img.addEventListener("load", () => {
-      img.classList.add("is-loaded");
-      const skel = img.parentElement && img.parentElement.querySelector(".visual-skeleton");
-      if (skel) skel.remove();
-      done();
-    }, {once: true});
-    img.addEventListener("error", () => {
-      img.classList.add("is-failed");
-      const wrap = img.closest(".visual-thumb-wrap");
-      const skel = wrap && wrap.querySelector(".visual-skeleton");
-      if (skel) {
-        skel.classList.add("is-error");
-        const label = skel.querySelector(".visual-skel-name");
-        if (label) label.textContent = "Couldn't load";
+    const finish = (ok) => {
+      if (ok) {
+        img.classList.add("is-loaded");
+        const skel = img.parentElement && img.parentElement.querySelector(".visual-skeleton");
+        if (skel) skel.remove();
+      } else {
+        img.classList.add("is-failed");
+        const wrap = img.closest(".visual-thumb-wrap");
+        const skel = wrap && wrap.querySelector(".visual-skeleton");
+        if (skel) {
+          skel.classList.add("is-error");
+          const label = skel.querySelector(".visual-skel-name");
+          if (label) label.textContent = "Couldn't load";
+        }
       }
       done();
-    }, {once: true});
-    if (!src) { img.dispatchEvent(new Event("error")); continue; }
+    };
+    const onLoad = () => { img.removeEventListener("error", onError); finish(true); };
+    const onError = () => {
+      if (full && img.dataset.fellback !== "1") {
+        img.dataset.fellback = "1";
+        img.src = full;
+        return;
+      }
+      img.removeEventListener("load", onLoad);
+      finish(false);
+    };
+    img.addEventListener("load", onLoad, {once: true});
+    img.addEventListener("error", onError);
+    if (!src) { onError(); continue; }
     thumbActive += 1;
     img.src = src;
+    if (img.complete && img.naturalWidth) {
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+      finish(true);
+    } else if (img.complete) {
+      onError();
+    }
   }
 }
 

@@ -174,6 +174,24 @@ class InProcessSubagents(unittest.TestCase):
         self.assertEqual(cards[0]["waiting_for"]["kind"], "shell")
         self.assertIsNone(cards[1]["waiting_for"])
 
+    def test_a_working_subagent_does_not_make_its_parent_wait_for_a_worker(self):
+        from herdr_attention import flow
+        now = 1_800_000_000.0
+        cards = [{"identity": "claude:p", "present": True, "status": "idle"},
+                 {"identity": "claude:p/subagent/a1", "present": True, "status": "working", "in_process": True, "status_since": now - 9}]
+        links = [{"from": "claude:p/subagent/a1", "to": "claude:p", "kind": "spawned_by"}]
+        flow.decorate(cards, links, {}, now, fresh_seconds=180, patterns=[])
+        self.assertIsNone(cards[0]["waiting_for"])
+
+    def test_a_closed_worker_does_not_keep_its_coordinator_waiting(self):
+        from herdr_attention import flow
+        now = 1_800_000_000.0
+        cards = [{"identity": "claude:p", "present": True, "status": "idle"},
+                 {"identity": "claude:w", "present": False, "status": "working", "status_since": now - 9}]
+        links = [{"from": "claude:w", "to": "claude:p", "kind": "reports_to"}]
+        flow.decorate(cards, links, {}, now, fresh_seconds=180, patterns=[])
+        self.assertIsNone(cards[0]["waiting_for"])
+
 
 class StallIsNotWaiting(unittest.TestCase):
     def quiet_agent(self, now, running=None):

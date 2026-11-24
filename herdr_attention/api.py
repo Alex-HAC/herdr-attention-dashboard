@@ -40,6 +40,7 @@ STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
           "/graph.js": ("graph.js", "text/javascript; charset=utf-8"),
           "/terminal.js": ("terminal.js", "text/javascript; charset=utf-8"),
+          "/details.js": ("details.js", "text/javascript; charset=utf-8"),
           "/style.css": ("style.css", "text/css; charset=utf-8"),
           "/InterVariable.woff2": ("InterVariable.woff2", "font/woff2"),
           "/Inter-LICENSE.txt": ("Inter-LICENSE.txt", "text/plain; charset=utf-8")}
@@ -69,7 +70,7 @@ def _asset(name: str) -> tuple[bytes, bytes, str]:
     if name == "style.css":   # the font URL inside the stylesheet is versioned too
         body = body.replace(b'url("InterVariable.woff2")', f'url("InterVariable.woff2?v={_asset("InterVariable.woff2")[2]}")'.encode())
     elif name == "index.html":
-        for other in ("style.css", "ui-contract.js", "graph.js", "terminal.js", "app.js", "InterVariable.woff2"):
+        for other in ("style.css", "ui-contract.js", "graph.js", "terminal.js", "details.js", "app.js", "InterVariable.woff2"):
             version = _asset(other)[2]
             body = body.replace(f'"{other}"'.encode(), f'"{other}?v={version}"'.encode())
     gz = gzip.compress(body, 9, mtime=0) if not name.endswith(".woff2") else b""
@@ -386,8 +387,11 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError,OSError):raise ApiError(404,"visual unavailable")
         cache=None
         if thumbnail and not download:
+            from .visuals import is_valid_thumbnail
+            path=Path(getattr(file,"name","") or "")
+            durable=bool(path.suffix.lower() in {".webp",".jpg",".jpeg"} and is_valid_thumbnail(path))
             etag=None
-            if hasattr(self.app,"visual_thumbnail_etag"):
+            if durable and hasattr(self.app,"visual_thumbnail_etag"):
                 try:etag=self.app.visual_thumbnail_etag(media_id)
                 except Exception:etag=None
             if etag and self.headers.get("If-None-Match")==etag:
@@ -397,8 +401,11 @@ class Handler(BaseHTTPRequestHandler):
                 for key,value in headers.items():self.send_header(key,value)
                 self.end_headers()
                 return
-            cache={"Cache-Control":"private, max-age=31536000, immutable"}
-            if etag:cache["ETag"]=etag
+            if durable:
+                cache={"Cache-Control":"private, max-age=31536000, immutable"}
+                if etag:cache["ETag"]=etag
+            else:
+                cache={"Cache-Control":"private, max-age=60"}
         name=self.app.visual_filename(media_id) if download else None
         self._media(file,mime,size,download=download,filename=name,cache=cache)
 
